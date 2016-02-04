@@ -31,10 +31,9 @@
         "Audio Recorder"
     ],
     "require": {
-        "claroline/core-bundle" : "~6.0",
+        "claroline/core-bundle" : "~6.0"
     },
     "autoload": {
         "psr-4": { "Innova\\CollecticielBundle": "" }
-    },
-    "target-dir": ""
+    }
 }
