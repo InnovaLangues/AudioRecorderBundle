@@ -2,8 +2,7 @@
     "name": "innova/audio-recorder-bundle",
     "license": "MIT",
     "type": "claroline-plugin",
-    "description": "Claroline Collecticiel Bundle",
-    "type": "claroline-plugin",
+    "description": "Claroline Audio Recorder Bundle",
     "authors" : [
         {
             "name" : "Eric Vincent",
