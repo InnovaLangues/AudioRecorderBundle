@@ -4,7 +4,7 @@ namespace Innova\AudioRecorderBundle\EventListener\Resource;
 
 use JMS\DiExtraBundle\Annotation as DI;
 
-use Symfony\Component\DependencyInjection\ContainerAware;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Claroline\CoreBundle\Event\OpenResourceEvent;
 use Claroline\CoreBundle\Event\CreateFormResourceEvent;
@@ -60,13 +60,5 @@ class AudioRecorderListener
         $content = $this->container->get('templating')->render('InnovaAudioRecorderBundle:AudioRecorder:create.html.twig');
         $event->setResponseContent($content);
         $event->stopPropagation();
-        
-        /*$route = $this->container
-                ->get('router')
-                ->generate('innova_audio_file_create_form');
-        
-        //'resourceType': _resource.getPrimaryResource().getResourceType().getName()
-        $event->setResponse(new RedirectResponse($route));
-        $event->stopPropagation();*/
     }
 }

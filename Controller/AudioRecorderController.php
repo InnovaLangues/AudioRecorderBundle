@@ -19,14 +19,17 @@ class AudioRecorderController extends Controller {
     
     
     /**
-     * @Route("/new", name="innova_audio_recorder_create_form")
-     * @Method("GET")
+     * @Route("/new", name="innova_audio_recorder_submit")
+     * @Method("POST")
      * 
      * @param type $request
      */
-    public function createFormAction(Request $request){
+    public function submitFormAction(Request $request){
+        
+        $formData = $request->request->all();
+        print_r($formData);die;
         // create a new claro file from request...
-        die('yep');
+        
     }
 
 }

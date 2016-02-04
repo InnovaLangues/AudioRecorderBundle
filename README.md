@@ -1,20 +1,17 @@
-# AudioFileBundle
+# AudioRecorderBundle
 
 This Bundle is a plugin intended to be used with [Claroline Connect LMS] (https://github.com/claroline/Claroline)
-It allows you to create an audio file resource by uploading a file or recording something with a microphone and upload the result.
+It allows you to create a Claroline file resource by recording audio and upload the result.
 
 ## Requirements
-- This plugin uses HTML5 AudioContext and WebRTC
+- This plugin uses WebRTC
 - Uses libavconv to convert audio to standard format
-- Be sure to have a compatible browser before installing this plugin
 
 ## Installation
 
 Install with composer :
 
-   $ composer require innova/audio-file-bundle
-
-   $ php app/console claroline:plugin:install AudioFileBundle
+   $ composer require innova/audio-recorder-bundle
 
 ## Authors
 
