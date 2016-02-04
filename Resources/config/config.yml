@@ -1,0 +1,9 @@
+plugin:    
+  has_options: false
+  icon: audio_recorder.png
+  
+  resources:
+    - class: Claroline\CoreBundle\Entity\Resource\File
+      name: innova_audio_recorder
+      is_exportable: false
+      icon: audio_recorder.png

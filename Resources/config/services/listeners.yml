@@ -1,0 +1,8 @@
+services:
+    innova_audio_recorder.listener.audio_recorder:
+        class: %innova_audio_recorder.listener.audio_recorder.class%
+        calls:
+            - [setContainer, ["@service_container"]]
+        tags:
+            - { name: kernel.event_listener, event: open_innova_audio_recorder, method: onOpen }
+            - { name: kernel.event_listener, event: create_form_innova_audio_recorder, method: onCreateForm }
