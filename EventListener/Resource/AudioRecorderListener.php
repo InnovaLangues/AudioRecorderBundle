@@ -3,19 +3,19 @@
 namespace Innova\AudioRecorderBundle\EventListener\Resource;
 
 use JMS\DiExtraBundle\Annotation as DI;
-
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Claroline\CoreBundle\Event\OpenResourceEvent;
 use Claroline\CoreBundle\Event\CreateFormResourceEvent;
+use Claroline\CoreBundle\Event\CreateResourceEvent;
+use Claroline\CoreBundle\Form\FileType;
+use Claroline\CoreBundle\Entity\Resource\File;
 
 /**
  *  @DI\Service()
  */
 class AudioRecorderListener
 {
-
-    
     private $container;
 
     /**
@@ -27,11 +27,13 @@ class AudioRecorderListener
     {
         $this->container = $container;
     }
-    
+
     /**
      * @DI\Observe("open_innova_audio_recorder")
      * Fired when a ResourceNode of type AudioFile is opened
+     *
      * @param \Claroline\CoreBundle\Event\OpenResourceEvent $event
+     *
      * @throws \Exception
      */
     public function onOpen(OpenResourceEvent $event)
@@ -41,23 +43,27 @@ class AudioRecorderListener
                 ->get('router')
                 ->generate('claro_resource_open', array(
             'parentId' => $resource->getResourceNode()->getId(),
-            'resourceType' => 'file'
+            'resourceType' => 'file',
                 )
         );
-        
-        //'resourceType': _resource..getResourceType().getName()
         $event->setResponse(new RedirectResponse($route));
         $event->stopPropagation();
-    }  
+    }
+
     
+
     /**
      * @DI\Observe("create_form_innova_audio_recorder")
+     *
      * @param CreateFormResourceEvent $event
      */
     public function onCreateForm(CreateFormResourceEvent $event)
     {
-        // Create form
-        $content = $this->container->get('templating')->render('InnovaAudioRecorderBundle:AudioRecorder:create.html.twig');
+        // Create form POPUP
+
+        $content = $this->container->get('templating')->render(
+          'InnovaAudioRecorderBundle:AudioRecorder:form.html.twig'
+        );
         $event->setResponseContent($content);
         $event->stopPropagation();
     }
