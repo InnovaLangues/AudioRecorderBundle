@@ -7,5 +7,3 @@ plugin:
       name: innova_audio_recorder
       is_exportable: false
       icon: audio_recorder.png
-      action:
-        - name: new_recorder
