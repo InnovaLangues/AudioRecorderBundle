@@ -62,11 +62,11 @@ function recordAudio() {
 }
 
 $('.modal').on('hide.bs.modal', function () {
-    
+
     console.log('close modal');
-    
+
     cancelAnalyserUpdates();
-    
+
     if (aStream)
         aStream.stop();
     audios = [];
@@ -153,30 +153,8 @@ function stopRecordingAudio() {
 function audioSelected(elem) {
     $('#submitButton').prop('disabled', false);
 }
-/*
-function uploadAudio() {
-    // get selected audio index
-    var index = -1;
-    index = parseInt($('input:checked').data('id'));
-    if (index > -1) {
-        var recorder = aRecorders[index];
-        var blob = recorder.getBlob();
-        var formData = new FormData();
 
-        var fileName = index.toString() + '-recorded';
-        formData.append('filename', fileName);
-        if (isFirefox) {
-            formData.append('nav', 'firefox');
-        } else {
-            formData.append('nav', 'chrome');
-        }
-        formData.append('blob', blob);
-        //var route = Routing.generate('innova_audio_recorder_submit');
-        var route = Routing.generate('submit_resource_form', {resourceType:'file'});
-        xhr(route, formData, null, function (fileURL) {});
-    }
-}*/
-
+// in my own controller
 function uploadAudio() {
     // get selected audio index
     var index = -1;
@@ -199,7 +177,31 @@ function uploadAudio() {
         xhr(route, formData, null, function (fileURL) {});
     }
 }
+/*
+// use with claro new Resource API
+function uploadAudio() {
+    // get selected audio index
+    var index = -1;
+    index = parseInt($('input:checked').data('id'));
+    if (index > -1) {
+        var recorder = aRecorders[index];
+        var blob = recorder.getBlob();
+        var formData = new FormData();
 
+        var fileName = index.toString() + '-recorded';
+        formData.append('filename', fileName);
+        if (isFirefox) {
+            formData.append('nav', 'firefox');
+        } else {
+            formData.append('nav', 'chrome');
+        }
+        formData.append('blob', blob);
+        //var route = Routing.generate('innova_audio_recorder_submit');
+        var route = Routing.generate('submit_resource_form', {resourceType:'file'});
+        xhr(route, formData, null, function (fileURL) {});
+    }
+}
+*/
 function xhr(url, data, progress, callback) {
     var request = new XMLHttpRequest();
     request.onreadystatechange = function () {
@@ -248,14 +250,14 @@ function gotStream(stream) {
     inputPoint = audioContext.createGain();
     // Create an AudioNode from the stream.
     realAudioInput = audioContext.createMediaStreamSource(stream);
-    
+
     meter = createAudioMeter(audioContext);
     realAudioInput.connect(meter);
     drawLoop();
 }
 
 function drawLoop( time ) {
-    
+
     if (!analyserContext) {
         var canvas = document.getElementById("analyser");
         canvasWidth = canvas.width;
@@ -265,7 +267,7 @@ function drawLoop( time ) {
         gradient.addColorStop(0.15, '#ffff00'); // min level color
         gradient.addColorStop(0.80, '#ff0000'); // max level color
     }
-    
+
     // clear the background
     analyserContext.clearRect(0,0,canvasWidth,canvasHeight);
 
