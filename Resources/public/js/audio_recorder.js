@@ -154,8 +154,8 @@ function audioSelected(elem) {
     $('#submitButton').prop('disabled', false);
 }
 
+/*
 // in my own controller
-
 function uploadAudio() {
     // get selected audio index
     var index = -1;
@@ -178,10 +178,9 @@ function uploadAudio() {
         xhr(route, formData, null, function (fileURL) {});
     }
 }
-
+*/
 
 // use with claro new Resource API
-/*
 function uploadAudio() {
   console.log('yep');
     // get selected audio index
@@ -194,23 +193,45 @@ function uploadAudio() {
         var formData = new FormData();
 
         var fileName = index.toString() + '-recorded';
-        formData.append('filename', fileName);
+        /*formData.append('filename', fileName);
         if (isFirefox) {
             formData.append('nav', 'firefox');
         } else {
             formData.append('nav', 'chrome');
-        }
-        formData.append('blob', blob);
+        }*/
+        formData.append('file', blob);
+
+
+        /*var fileFormData = {
+          'file' : blob,
+          'nav' : 'firefox',
+          'name': 'fake-name'
+        };*/
+
+        //formData.append('file_form', fileFormData;
+
+
+        //file_form[name] file_form[file]
+
+        //formData.append('file', blob);
         //var route = Routing.generate('innova_audio_recorder_submit');
         // /api/resources/{resourceType}/parent/{parent}/encoding/{encoding}/
         // var route = Routing.generate('submit_resource_form', {'resourceType':'file', 'parent':0, 'encoding':'none'});
         var route = $('#submit-url').val();
-        // OAuth2 authentication required
-        //var route = 'http://localhost/patrick/Claroline/web/app_dev.php/api/resources/file/parent/0';
+
+        /*$.ajax({
+          url :route,
+          type: 'POST',
+          data: fileFormData,
+        }).done(function(data){
+          console.log('done');
+          console.log(data);
+        });*/
+
         xhr(route, formData, null, function (fileURL) {});
     }
 }
-*/
+
 
 function xhr(url, data, progress, callback) {
     var request = new XMLHttpRequest();
@@ -231,7 +252,7 @@ function xhr(url, data, progress, callback) {
             aid = 0;
 
             // or generate route...
-            location.reload();
+            // location.reload();
 
         }
     };
