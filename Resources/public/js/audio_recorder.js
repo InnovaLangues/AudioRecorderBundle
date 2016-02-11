@@ -133,15 +133,17 @@ function stopRecordingAudio() {
             var index = parseInt($(this).data('id'));
             console.log('delete me ' + index.toString());
             audios.splice(index, 1);
+
             aRecorders.splice(index, 1);
             if (audios.length === 0) {
                 $('#submitButton').prop('disabled', true);
             }
-
+            aid = audios.length;
             $('#recorded-audio-row-' + index).remove();
         });
 
         aid++;
+        console.log('aid ' + aid);
 
         // stop sharing microphone
         if (aStream)
