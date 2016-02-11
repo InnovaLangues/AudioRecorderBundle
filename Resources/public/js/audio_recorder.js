@@ -155,6 +155,7 @@ function audioSelected(elem) {
 }
 
 // in my own controller
+
 function uploadAudio() {
     // get selected audio index
     var index = -1;
@@ -172,18 +173,22 @@ function uploadAudio() {
             formData.append('nav', 'chrome');
         }
         formData.append('blob', blob);
-        //var route = Routing.generate('innova_audio_recorder_submit');
-        var route = Routing.generate('submit_resource_form', {resourceType:'file'});
+        var route = Routing.generate('innova_audio_recorder_submit');
+        //var route = Routing.generate('submit_resource_form', {resourceType:'file'});
         xhr(route, formData, null, function (fileURL) {});
     }
 }
-/*
+
+
 // use with claro new Resource API
+/*
 function uploadAudio() {
+  console.log('yep');
     // get selected audio index
     var index = -1;
     index = parseInt($('input:checked').data('id'));
     if (index > -1) {
+        console.log('yep2');
         var recorder = aRecorders[index];
         var blob = recorder.getBlob();
         var formData = new FormData();
@@ -197,11 +202,16 @@ function uploadAudio() {
         }
         formData.append('blob', blob);
         //var route = Routing.generate('innova_audio_recorder_submit');
-        var route = Routing.generate('submit_resource_form', {resourceType:'file'});
+        // /api/resources/{resourceType}/parent/{parent}/encoding/{encoding}/
+        // var route = Routing.generate('submit_resource_form', {'resourceType':'file', 'parent':0, 'encoding':'none'});
+        var route = $('#submit-url').val();
+        // OAuth2 authentication required
+        //var route = 'http://localhost/patrick/Claroline/web/app_dev.php/api/resources/file/parent/0';
         xhr(route, formData, null, function (fileURL) {});
     }
 }
 */
+
 function xhr(url, data, progress, callback) {
     var request = new XMLHttpRequest();
     request.onreadystatechange = function () {
