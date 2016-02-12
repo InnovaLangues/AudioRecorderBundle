@@ -50,7 +50,8 @@ class AudioRecorderListener
         $event->stopPropagation();
     }
 
-    
+
+
 
     /**
      * @DI\Observe("create_form_innova_audio_recorder")

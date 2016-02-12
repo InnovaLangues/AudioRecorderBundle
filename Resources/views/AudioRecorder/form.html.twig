@@ -49,7 +49,6 @@
       <button type="button" role="button" id="submitButton" disabled="disabled" onclick="uploadAudio()" class="btn btn-primary">{{ 'ok'|trans({}, 'platform') }}</button>
     </div>
   </div>
-  <input type="hidden" id="submit-url" value="{{ path('submit_resource_form', {'resourceType':'file', 'parent':'0', 'encoding':'none'}) }}">
 </div>
 
 {% block javascripts %}
