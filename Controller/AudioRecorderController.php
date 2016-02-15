@@ -49,6 +49,7 @@ class AudioRecorderController
     public function submitFormAction(Request $request)
     {
         $formData = $request->request->all();
+        
 
         // nav should be mandatory
         /*if (isFirefox) {
