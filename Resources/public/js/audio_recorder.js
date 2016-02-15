@@ -11,8 +11,8 @@ var audioRecorder; // WebRtc object
 
 var audioContext = new window.AudioContext();
 var audioInput = null,
-        realAudioInput = null,
-        inputPoint = null;
+  realAudioInput = null,
+  inputPoint = null;
 var rafID = null;
 var analyserContext = null;
 var analyserNode = null;
@@ -23,296 +23,255 @@ var meter;
 
 var aid = 0; // audio array current recording index
 var aRecorders = []; // collection of recorders
-var audios = [];// collection of audio objects
+var audios = []; // collection of audio objects
 var aStream; // current recorder stream
-
-
 
 
 function recordAudio() {
 
-    captureUserMedia({
-        audio: true
-    }, function (audioStream) {
+  captureUserMedia({
+    audio: true
+  }, function(audioStream) {
 
-        $('#audio-record-start').prop('disabled', 'disabled');
-        $('#audio-play').prop('disabled', 'disabled');
-        $('#audio-record-stop').prop('disabled', '');
-        $('#audio-download').prop('disabled', 'disabled');
+    $('#audio-record-start').prop('disabled', 'disabled');
+    $('#audio-record-stop').prop('disabled', '');
 
-        var options = {
-            type: 'audio',
-            bufferSize: 0,
-            sampleRate: 44100
-        };
+    var options = {
+      type: 'audio',
+      bufferSize: 0,
+      sampleRate: 44100
+    };
 
-        audioRecorder = RecordRTC(audioStream, options);
+    audioRecorder = RecordRTC(audioStream, options);
 
-        audioRecorder.startRecording();
-        gotStream(audioStream);
+    audioRecorder.startRecording();
+    gotStream(audioStream);
 
-        aStream = audioStream;
+    aStream = audioStream;
 
-        audioStream.onended = function () {
-            console.log('stream ended');
-        };
-    }, function (error) {
-        console.log(error);
-    });
+    audioStream.onended = function() {
+      console.log('stream ended');
+    };
+  }, function(error) {
+    console.log(error);
+  });
 }
 
-$('.modal').on('hide.bs.modal', function () {
+$('.modal').on('hide.bs.modal', function() {
 
-    console.log('close modal');
+  console.log('close modal');
 
-    cancelAnalyserUpdates();
+  cancelAnalyserUpdates();
 
-    if (aStream)
-        aStream.stop();
-    audios = [];
-    aRecorders = [];
+  if (aStream)
+    aStream.stop();
+  audios = [];
+  aRecorders = [];
 
-    audioContext = null;
-    audioInput = null;
-    realAudioInput = null;
-    inputPoint = null;
-    rafID = null;
-    analyserContext = null;
-    analyserNode = null;
-    aStream = null;
-    aid = 0;
+  audioContext = null;
+  audioInput = null;
+  realAudioInput = null;
+  inputPoint = null;
+  rafID = null;
+  analyserContext = null;
+  analyserNode = null;
+  aStream = null;
+  aid = 0;
 });
 
 
 
 function stopRecordingAudio() {
-    var aRec = audioRecorder;
-    audioRecorder.stopRecording(function (url) {
-        cancelAnalyserUpdates();
+  var aRec = audioRecorder;
+  audioRecorder.stopRecording(function(url) {
+    cancelAnalyserUpdates();
 
-        $('#audio-record-start').prop('disabled', '');
-        $('#audio-play').prop('disabled', '');
-        $('#audio-record-stop').prop('disabled', 'disabled');
-        $('#audio-download').prop('disabled', '');
+    $('#audio-record-start').prop('disabled', '');
+    $('#audio-record-stop').prop('disabled', 'disabled');
 
-        audioObject = new Audio();
-        audioObject.src = url;
+    audioObject = new Audio();
+    audioObject.src = url;
+    audios.push(audioObject);
 
-        audios.push(audioObject);
+    aRecorders.push(aRec);
 
-        var html = '<div class="row" id="recorded-audio-row-' + aid.toString() + '">';
-        html += '       <div class="col-md-8">';
-        html += '         <div class="btn-group">';
-        html += '           <button type="button" role="button" class="btn btn-default fa fa-play" data-id="' + aid + '" id="audio-play-' + aid.toString() + '"></button>';
-        html += '           <button type="button" role="button" class="btn btn-default fa fa-stop" data-id="' + aid + '" id="audio-stop-' + aid.toString() + '"></button>';
-        html += '           <button type="button" role="button" class="btn btn-danger fa fa-trash" data-id="' + aid + '" id="audio-delete-' + aid.toString() + '"></button>';
-        html += '         </div>';
-        html += '       </div>';
-        html += '       <div class="col-md-4">';
-        html += '         <input type="radio"  data-id="' + aid + '" name="audio-selected" onclick="audioSelected(this)">';
-        html += '       </div>';
-        html += '       <hr/>';
-        html += '   </div>';
-        $('#audio-records-container').append(html);
+    // recorded audio template
+    var html = '<div class="row recorded-audio-row" id="recorded-audio-row-' + aid.toString() + '" data-index="' + aid + '">';
+    html += '       <div class="col-md-8">';
+    html += '         <div class="btn-group">';
+    html += '           <button type="button" role="button" class="btn btn-default fa fa-play play" onclick="playAudio(this)"></button>';
+    html += '           <button type="button" role="button" class="btn btn-default fa fa-stop stop" onclick="stopAudio(this)"></button>';
+    html += '           <button type="button" role="button" class="btn btn-danger fa fa-trash delete" onclick="deleteAudio(this)"></button>';
+    html += '         </div>';
+    html += '       </div>';
+    html += '       <div class="col-md-4">';
+    html += '         <input type="radio" name="audio-selected" class="select" onclick="audioSelected(this)">';
+    html += '       </div>';
+    html += '       <hr/>';
+    html += '   </div>';
+    $('#audio-records-container').append(html);
 
-        aRecorders.push(aRec);
+    aid++;
 
-        $('#audio-play-' + aid.toString()).on('click', function () {
-            var index = parseInt($(this).data('id'));
-            audios[index].play();
-            //aRecorders[index].save();
-        });
+    // stop sharing microphone
+    if (aStream)
+      aStream.stop();
 
-        $('#audio-stop-' + aid.toString()).on('click', function () {
-            var index = parseInt($(this).data('id'));
-            audios[index].pause();
-            audios[index].currentTime = 0;
-        });
-
-        $('#audio-delete-' + aid.toString()).on('click', function () {
-            var index = parseInt($(this).data('id'));
-            console.log('delete me ' + index.toString());
-            audios.splice(index, 1);
-            aRecorders.splice(index, 1);
-            if (audios.length === 0) {
-                $('#submitButton').prop('disabled', true);
-            }
-
-            $('#recorded-audio-row-' + index).remove();
-        });
-
-        aid++;
-
-        // stop sharing microphone
-        if (aStream)
-            aStream.stop();
-
-    });
+  });
 }
 
 function audioSelected(elem) {
-    $('#submitButton').prop('disabled', false);
+  $('#submitButton').prop('disabled', false);
 }
 
-/*
-// in my own controller
-function uploadAudio() {
-    // get selected audio index
-    var index = -1;
-    index = parseInt($('input:checked').data('id'));
-    if (index > -1) {
-        var recorder = aRecorders[index];
-        var blob = recorder.getBlob();
-        var formData = new FormData();
 
-        var fileName = index.toString() + '-recorded';
-        formData.append('filename', fileName);
-        if (isFirefox) {
-            formData.append('nav', 'firefox');
-        } else {
-            formData.append('nav', 'chrome');
-        }
-        formData.append('blob', blob);
-        var route = Routing.generate('innova_audio_recorder_submit');
-        //var route = Routing.generate('submit_resource_form', {resourceType:'file'});
-        xhr(route, formData, null, function (fileURL) {});
-    }
+
+function playAudio(elem) {
+  var index = $(elem).closest('.recorded-audio-row').attr('data-index');
+  audios[index].play();
 }
-*/
+
+function stopAudio(elem) {
+  var index = $(elem).closest('.recorded-audio-row').attr('data-index');
+  audios[index].pause();
+  audios[index].currentTime = 0;
+}
+
+function deleteAudio(elem) {
+  var index = $(elem).closest('.recorded-audio-row').attr('data-index');
+  audios.splice(index, 1);
+  aRecorders.splice(index, 1);
+
+  $('#recorded-audio-row-' + index.toString()).remove();
+  if (audios.length === 0) {
+    $('#submitButton').prop('disabled', true);
+  }
+
+  // rebuilt all row id(s) and index
+  $('.recorded-audio-row').each(function(i) {
+    console.log('rebuilt row data-indexes');
+    $(this).attr('id', 'recorded-audio-row-' + i.toString());
+    $(this).attr('data-index', i);
+  });
+
+  aid = audios.length;
+}
+
 
 // use with claro new Resource API
 function uploadAudio() {
-  console.log('yep');
-    // get selected audio index
-    var index = -1;
-    index = parseInt($('input:checked').data('id'));
-    if (index > -1) {
-        console.log('yep2');
-        var recorder = aRecorders[index];
-        var blob = recorder.getBlob();
-        var formData = new FormData();
 
-        var fileName = index.toString() + '-recorded';
-        /*formData.append('filename', fileName);
-        if (isFirefox) {
-            formData.append('nav', 'firefox');
-        } else {
-            formData.append('nav', 'chrome');
-        }*/
-        formData.append('file', blob);
-
-
-        /*var fileFormData = {
-          'file' : blob,
-          'nav' : 'firefox',
-          'name': 'fake-name'
-        };*/
-
-        //formData.append('file_form', fileFormData;
-
-
-        //file_form[name] file_form[file]
-
-        //formData.append('file', blob);
-        //var route = Routing.generate('innova_audio_recorder_submit');
-        // /api/resources/{resourceType}/parent/{parent}/encoding/{encoding}/
-        // var route = Routing.generate('submit_resource_form', {'resourceType':'file', 'parent':0, 'encoding':'none'});
-        var route = $('#submit-url').val();
-
-        /*$.ajax({
-          url :route,
-          type: 'POST',
-          data: fileFormData,
-        }).done(function(data){
-          console.log('done');
-          console.log(data);
-        });*/
-
-        xhr(route, formData, null, function (fileURL) {});
+  // get selected audio index
+  var index = -1;
+  index = $('input:checked').closest('.recorded-audio-row').attr('data-index');
+  if (index > -1) {
+    var recorder = aRecorders[index];
+    var blob = recorder.getBlob();
+    var formData = new FormData();
+    // nav should be mandatory
+    if (isFirefox) {
+        formData.append('nav', 'firefox');
+    } else {
+        formData.append('nav', 'chrome');
     }
+    // type should be mandatory
+    formData.append('type', 'webrtc_audio');
+    // convert is optionnal
+    formData.append('convert', 'mp3');
+    // file is mandatory
+    formData.append('file', blob);
+    //  var route = $('#submit-url').val();
+    var route = Routing.generate('innova_audio_recorder_submit');
+    xhr(route, formData, null, function(fileURL) {});
+  }
 }
 
-
 function xhr(url, data, progress, callback) {
-    var request = new XMLHttpRequest();
-    request.onreadystatechange = function () {
-        if (request.readyState === 4 && request.status === 200) {
-            console.log('xhr end with success');
-            audios = [];
-            aRecorders = [];
+  var request = new XMLHttpRequest();
 
-            audioContext = null;
-            audioInput = null;
-            realAudioInput = null;
-            inputPoint = null;
-            rafID = null;
-            analyserContext = null;
-            analyserNode = null;
-            aStream = null;
-            aid = 0;
+  var message = Translator.trans('creating_resource', {}, 'innova_audio_recorder');
+  // tell the user that his action has been taken into account
+  $('#submitButton').text(message);
+  $('#submitButton').attr('disabled', true);
 
-            // or generate route...
-            // location.reload();
+  request.onreadystatechange = function() {
+    if (request.readyState === 4 && request.status === 200) {
+      console.log('xhr end with success');
+      audios = [];
+      aRecorders = [];
 
-        }
-    };
-    request.upload.onprogress = function (e) {
-        if (!progress)
-            return;
-        if (e.lengthComputable) {
-            progress.value = (e.loaded / e.total) * 100;
-            progress.textContent = progress.value;
-        }
-        if (progress.value === 100) {
-            progress.value = 0;
-        }
-    };
-    request.open('POST', url);
-    request.send(data);
+      audioContext = null;
+      audioInput = null;
+      realAudioInput = null;
+      inputPoint = null;
+      rafID = null;
+      analyserContext = null;
+      analyserNode = null;
+      aStream = null;
+      aid = 0;
+      // or generate route...
+      location.reload();
+
+    } else if(request.status === 500) {
+      console.log('xhr error');
+      console.log(request.response.message);
+      $('#submitButton').text(Translator.trans('ok', {}, 'platform'));
+      $('#submitButton').attr('disabled', false);
+    }
+  };
+
+  request.upload.onprogress = function(e) {
+    // if we want to use progress bar
+  };
+
+  request.open('POST', url);
+  request.send(data);
 }
 
 function captureUserMedia(mediaConstraints, successCallback, errorCallback) {
-    // needs adapter.js to work in chrome
-    navigator.mediaDevices.getUserMedia(mediaConstraints).then(successCallback).catch(errorCallback);
+  // needs adapter.js to work in chrome
+  navigator.mediaDevices.getUserMedia(mediaConstraints).then(successCallback).catch(errorCallback);
 }
 
 
 function gotStream(stream) {
-    inputPoint = audioContext.createGain();
-    // Create an AudioNode from the stream.
-    realAudioInput = audioContext.createMediaStreamSource(stream);
+  inputPoint = audioContext.createGain();
+  // Create an AudioNode from the stream.
+  realAudioInput = audioContext.createMediaStreamSource(stream);
 
-    meter = createAudioMeter(audioContext);
-    realAudioInput.connect(meter);
-    drawLoop();
+  meter = createAudioMeter(audioContext);
+  realAudioInput.connect(meter);
+  drawLoop();
 }
 
-function drawLoop( time ) {
+function drawLoop(time) {
 
-    if (!analyserContext) {
-        var canvas = document.getElementById("analyser");
-        canvasWidth = canvas.width;
-        canvasHeight = canvas.height;
-        analyserContext = canvas.getContext('2d');
-        gradient = analyserContext.createLinearGradient(0, 0, canvasWidth, 0);
-        gradient.addColorStop(0.15, '#ffff00'); // min level color
-        gradient.addColorStop(0.80, '#ff0000'); // max level color
-    }
+  if (!analyserContext) {
+    var canvas = document.getElementById("analyser");
+    canvasWidth = canvas.width;
+    canvasHeight = canvas.height;
+    analyserContext = canvas.getContext('2d');
+    gradient = analyserContext.createLinearGradient(0, 0, canvasWidth, 0);
+    gradient.addColorStop(0.15, '#ffff00'); // min level color
+    gradient.addColorStop(0.80, '#ff0000'); // max level color
+  }
 
-    // clear the background
-    analyserContext.clearRect(0,0,canvasWidth,canvasHeight);
+  // clear the background
+  analyserContext.clearRect(0, 0, canvasWidth, canvasHeight);
 
-    analyserContext.fillStyle = gradient;
-    // draw a bar based on the current volume
-    analyserContext.fillRect(0, 0, meter.volume * canvasWidth * 1.4, canvasHeight);
+  analyserContext.fillStyle = gradient;
+  // draw a bar based on the current volume
+  analyserContext.fillRect(0, 0, meter.volume * canvasWidth * 1.4, canvasHeight);
 
-    // set up the next visual callback
-    rafID = window.requestAnimationFrame( drawLoop );
+  // set up the next visual callback
+  rafID = window.requestAnimationFrame(drawLoop);
 }
 
 function cancelAnalyserUpdates() {
-    window.cancelAnimationFrame(rafID);
-    // clear the current state
+  window.cancelAnimationFrame(rafID);
+  // clear the current state
+  if(analyserContext){
     analyserContext.clearRect(0, 0, canvasWidth, canvasHeight);
-    rafID = null;
+  }
+  rafID = null;
 }
