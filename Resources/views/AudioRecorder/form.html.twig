@@ -45,15 +45,18 @@
       </div>
     </div>
     <div class="modal-footer">
+      <div id="progress"></div>
       <button type="button" role="button" class="btn btn-default" data-dismiss="modal">{{ 'cancel'|trans({}, 'platform') }}</button>
       <button type="button" role="button" id="submitButton" disabled="disabled" onclick="uploadAudio()" class="btn btn-primary">{{ 'ok'|trans({}, 'platform') }}</button>
+
     </div>
   </div>
+  <input type="hidden" id="submit-url" value="{{ path('submit_resource_form', {'resourceType':'webrtc_audio', 'parent':'0', 'encoding':'none'}) }}">
 </div>
 
 {% block javascripts %}
 
-<script type="text/javascript" src="{{ url('bazinga_jstranslation_js', { 'domain':'audio_recorder' }) }}"></script>
+<script type="text/javascript" src="{{ url('bazinga_jstranslation_js', { 'domain':'innova_audio_recorder' }) }}"></script>
 
 {% javascripts debug=false filter='jsmin' output='vendor/innova/audio-recorder/js/innova-audio-recorder.js'
   '@InnovaAudioRecorderBundle/Resources/public/js/libs/*'

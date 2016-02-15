@@ -27,6 +27,8 @@ var audios = []; // collection of audio objects
 var aStream; // current recorder stream
 
 
+
+
 function recordAudio() {
 
   captureUserMedia({
@@ -38,7 +40,7 @@ function recordAudio() {
 
     var options = {
       type: 'audio',
-      bufferSize: 128,
+      bufferSize: 0,
       sampleRate: 44100
     };
 
@@ -56,10 +58,6 @@ function recordAudio() {
     console.log(error);
   });
 }
-
-$('.modal').on('show.bs.modal', function() {
-  console.log('show modal');
-});
 
 $('.modal').on('hide.bs.modal', function() {
 
@@ -95,9 +93,10 @@ function stopRecordingAudio() {
 
     audioObject = new Audio();
     audioObject.src = url;
+    audios.push(audioObject);
+
     aRecorders.push(aRec);
 
-    audios.push(audioObject);
     // recorded audio template
     var html = '<div class="row recorded-audio-row" id="recorded-audio-row-' + aid.toString() + '" data-index="' + aid + '">';
     html += '       <div class="col-md-8">';
@@ -114,9 +113,7 @@ function stopRecordingAudio() {
     html += '   </div>';
     $('#audio-records-container').append(html);
 
-
     aid++;
-    console.log('aid ' + aid);
 
     // stop sharing microphone
     if (aStream)
@@ -124,6 +121,11 @@ function stopRecordingAudio() {
 
   });
 }
+
+function audioSelected(elem) {
+  $('#submitButton').prop('disabled', false);
+}
+
 
 
 function playAudio(elem) {
@@ -158,38 +160,42 @@ function deleteAudio(elem) {
 }
 
 
-function audioSelected(elem) {
-  $('#submitButton').prop('disabled', false);
-}
-
-// in my own controller
-
+// use with claro new Resource API
 function uploadAudio() {
+
   // get selected audio index
   var index = -1;
-  index = $('input:checked').closest('.recorded-audio-row').data('index');
-  //index = parseInt($('input:checked').data('id'));
+  index = $('input:checked').closest('.recorded-audio-row').attr('data-index');
   if (index > -1) {
     var recorder = aRecorders[index];
     var blob = recorder.getBlob();
     var formData = new FormData();
-
-    var fileName = index.toString() + '-recorded';
-    formData.append('filename', fileName);
+    // nav should be mandatory
     if (isFirefox) {
-      formData.append('nav', 'firefox');
+        formData.append('nav', 'firefox');
     } else {
-      formData.append('nav', 'chrome');
+        formData.append('nav', 'chrome');
     }
-    formData.append('blob', blob);
+    // type should be mandatory
+    formData.append('type', 'webrtc_audio');
+    // convert is optionnal
+    formData.append('convert', 'mp3');
+    // file is mandatory
+    formData.append('file', blob);
+    //  var route = $('#submit-url').val();
     var route = Routing.generate('innova_audio_recorder_submit');
-    //var route = Routing.generate('submit_resource_form', {resourceType:'file'});
     xhr(route, formData, null, function(fileURL) {});
   }
 }
 
 function xhr(url, data, progress, callback) {
   var request = new XMLHttpRequest();
+
+  var message = Translator.trans('creating_resource', {}, 'innova_audio_recorder');
+  // tell the user that his action has been taken into account
+  $('#submitButton').text(message);
+  $('#submitButton').attr('disabled', true);
+
   request.onreadystatechange = function() {
     if (request.readyState === 4 && request.status === 200) {
       console.log('xhr end with success');
@@ -205,23 +211,21 @@ function xhr(url, data, progress, callback) {
       analyserNode = null;
       aStream = null;
       aid = 0;
-
       // or generate route...
       location.reload();
 
+    } else if(request.status === 500) {
+      console.log('xhr error');
+      console.log(request.response.message);
+      $('#submitButton').text(Translator.trans('ok', {}, 'platform'));
+      $('#submitButton').attr('disabled', false);
     }
   };
+
   request.upload.onprogress = function(e) {
-    if (!progress)
-      return;
-    if (e.lengthComputable) {
-      progress.value = (e.loaded / e.total) * 100;
-      progress.textContent = progress.value;
-    }
-    if (progress.value === 100) {
-      progress.value = 0;
-    }
+    // if we want to use progress bar
   };
+
   request.open('POST', url);
   request.send(data);
 }
@@ -236,7 +240,7 @@ function gotStream(stream) {
   inputPoint = audioContext.createGain();
   // Create an AudioNode from the stream.
   realAudioInput = audioContext.createMediaStreamSource(stream);
-  // create the meter control
+
   meter = createAudioMeter(audioContext);
   realAudioInput.connect(meter);
   drawLoop();
@@ -268,6 +272,8 @@ function drawLoop(time) {
 function cancelAnalyserUpdates() {
   window.cancelAnimationFrame(rafID);
   // clear the current state
-  analyserContext.clearRect(0, 0, canvasWidth, canvasHeight);
+  if(analyserContext){
+    analyserContext.clearRect(0, 0, canvasWidth, canvasHeight);
+  }
   rafID = null;
 }
