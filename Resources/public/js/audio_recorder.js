@@ -89,41 +89,43 @@ $('.modal').on('hide.bs.modal', function() {
 
 function stopRecordingAudio() {
   var aRec = audioRecorder;
-  audioRecorder.stopRecording(function(url) {
-    cancelAnalyserUpdates();
+  $('#audio-record-start').prop('disabled', '');
+  $('#audio-record-stop').prop('disabled', 'disabled');
 
-    $('#audio-record-start').prop('disabled', '');
-    $('#audio-record-stop').prop('disabled', 'disabled');
+  // avoid recorded audio truncated end by setting a timeout
+  window.setTimeout(function(){
 
-    audioObject = new Audio();
-    audioObject.src = url;
-    audios.push(audioObject);
+    audioRecorder.stopRecording(function(url) {
+      cancelAnalyserUpdates();
+      audioObject = new Audio();
+      audioObject.src = url;
+      audios.push(audioObject);
 
-    aRecorders.push(aRec);
+      aRecorders.push(aRec);
 
-    // recorded audio template
-    var html = '<div class="row recorded-audio-row" id="recorded-audio-row-' + aid.toString() + '" data-index="' + aid + '">';
-    html += '       <div class="col-md-8">';
-    html += '         <div class="btn-group">';
-    html += '           <button type="button" role="button" class="btn btn-default fa fa-play play" onclick="playAudio(this)"></button>';
-    html += '           <button type="button" role="button" class="btn btn-default fa fa-stop stop" onclick="stopAudio(this)"></button>';
-    html += '           <button type="button" role="button" class="btn btn-danger fa fa-trash delete" onclick="deleteAudio(this)"></button>';
-    html += '         </div>';
-    html += '       </div>';
-    html += '       <div class="col-md-4">';
-    html += '         <input type="radio" name="audio-selected" class="select" onclick="audioSelected(this)">';
-    html += '       </div>';
-    html += '       <hr/>';
-    html += '   </div>';
-    $('#audio-records-container').append(html);
+      // recorded audio template
+      var html = '<div class="row recorded-audio-row" id="recorded-audio-row-' + aid.toString() + '" data-index="' + aid + '">';
+      html += '       <div class="col-md-8">';
+      html += '         <div class="btn-group">';
+      html += '           <button type="button" role="button" class="btn btn-default fa fa-play play" onclick="playAudio(this)"></button>';
+      html += '           <button type="button" role="button" class="btn btn-default fa fa-stop stop" onclick="stopAudio(this)"></button>';
+      html += '           <button type="button" role="button" class="btn btn-danger fa fa-trash delete" onclick="deleteAudio(this)"></button>';
+      html += '         </div>';
+      html += '       </div>';
+      html += '       <div class="col-md-4">';
+      html += '         <input type="radio" name="audio-selected" class="select" onclick="audioSelected(this)">';
+      html += '       </div>';
+      html += '       <hr/>';
+      html += '   </div>';
+      $('#audio-records-container').append(html);
 
-    aid++;
-
-    // stop sharing microphone
-    if (aStream)
-      aStream.stop();
-
-  });
+      aid++;
+      // stop sharing usermedia
+      if (aStream){
+        aStream.stop();
+      }
+    });
+  }, 1500);
 }
 
 function audioSelected(elem) {
