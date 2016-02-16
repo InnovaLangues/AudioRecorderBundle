@@ -11,12 +11,8 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Claroline\CoreBundle\Entity\Resource\ResourceType;
-use Claroline\CoreBundle\Manager\ResourceManager;
 use Innova\AudioRecorderBundle\Manager\AudioRecorderManager;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Claroline\CoreBundle\Entity\Resource\File;
-use Symfony\Component\Filesystem\Filesystem;
 use JMS\DiExtraBundle\Annotation as DI;
 
 /**
@@ -37,11 +33,11 @@ class AudioRecorderController
         $this->arm = $arm;
     }
 
+
     /**
-     * @Route("/add", name="innova_audio_recorder_submit", options={"expose" = true})
-     * @Method("POST")
+     * php app/console router:debug post_audio_recorder_blob for routing informations
      */
-    public function submitFormAction(Request $request)
+    public function postAudioRecorderBlobAction(Request $request)
     {
         $formData = $request->request->all();
         $blob = $request->files->get('file');

@@ -51,7 +51,7 @@
 
     </div>
   </div>
-  <input type="hidden" id="submit-url" value="{{ path('submit_resource_form', {'resourceType':'webrtc_audio', 'parent':'0', 'encoding':'none'}) }}">
+  <input type="hidden" id="submit-url" value="{{ path('post_audio_recorder_blob') }}">
 </div>
 
 {% block javascripts %}

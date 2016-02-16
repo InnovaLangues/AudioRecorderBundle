@@ -6,23 +6,27 @@
     "authors" : [
         {
             "name" : "Eric Vincent",
-            "email" : "eric.vincent@u-grenoble3.fr"
+            "email" : "eric.vincent@univ-grenoble-alpes.fr"
         },
         {
             "name" : "Axel Penin",
-            "email" : "axel.penin@u-grenoble3.fr"
+            "email" : "axel.penin@univ-grenoble-alpes.fr"
         },
         {
             "name" : "Nicolas Dufour",
-            "email" : "nicolas.dufour@u-grenoble3.fr"
+            "email" : "nicolas.dufour@univ-grenoble-alpes.fr"
         },
         {
             "name" : "Arnaud Bey",
-            "email" : "arnaud.bey@u-grenoble3.fr"
+            "email" : "arnaud.bey@univ-grenoble-alpes.fr"
         },
         {
             "name" : "Donovan Tengblad",
-            "email" : "donovan.tengblad@u-grenoble3.fr"
+            "email" : "donovan.tengblad@univ-grenoble-alpes.fr"
+        },
+        {
+            "name" : "Patrick Guillou",
+            "email" : "patrick.guillou@univ-grenoble-alpes.fr"
         }
     ],
     "keywords" : [

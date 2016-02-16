@@ -1,4 +1,4 @@
-// Last time updated: 2016-01-27 12:46:28 PM UTC
+// Last time updated: 2016-01-18 2:47:14 PM UTC
 
 // links:
 // Open-Sourced: https://github.com/muaz-khan/RecordRTC
@@ -741,7 +741,7 @@ function RecordRTCConfiguration(mediaStream, config) {
         }
 
         if (!config.bitsPerSecond) {
-            // config.bitsPerSecond = 128000;
+            config.bitsPerSecond = 128000;
         }
     }
 
@@ -899,7 +899,6 @@ function MRecordRTC(mediaStream) {
                 type: 'audio',
                 bufferSize: this.bufferSize,
                 sampleRate: this.sampleRate,
-                numberOfAudioChannels: this.numberOfAudioChannels || 2,
                 disableLogs: this.disableLogs
             });
             if (!this.mediaType.video) {
@@ -912,7 +911,6 @@ function MRecordRTC(mediaStream) {
                 type: 'video',
                 video: this.video,
                 canvas: this.canvas,
-                frameInterval: this.frameInterval || 10,
                 disableLogs: this.disableLogs
             });
             if (!this.mediaType.audio) {
@@ -1438,7 +1436,7 @@ function isMediaRecorderCompatible() {
 
 function MediaStreamRecorder(mediaStream, config) {
     config = config || {
-        // bitsPerSecond: 128000,
+        bitsPerSecond: 128000,
         mimeType: 'video/webm'
     };
 
@@ -1496,7 +1494,7 @@ function MediaStreamRecorder(mediaStream, config) {
             }
         }
 
-        // i.e. stop recording when <video> is paused by the user; and auto restart recording
+        // i.e. stop recording when <video> is paused by the user; and auto restart recording 
         // when video is resumed. E.g. yourStream.getVideoTracks()[0].muted = true; // it will auto-stop recording.
         mediaRecorder.ignoreMutedMedia = config.ignoreMutedMedia || false;
 
@@ -1530,10 +1528,10 @@ function MediaStreamRecorder(mediaStream, config) {
                 }
             }
 
-            // When the stream is "ended" set recording to 'inactive'
-            // and stop gathering data. Callers should not rely on
-            // exactness of the timeSlice value, especially
-            // if the timeSlice value is small. Callers should
+            // When the stream is "ended" set recording to 'inactive' 
+            // and stop gathering data. Callers should not rely on 
+            // exactness of the timeSlice value, especially 
+            // if the timeSlice value is small. Callers should 
             // consider timeSlice as a minimum value
 
             if (mediaRecorder.state !== 'inactive' && mediaRecorder.state !== 'stopped') {
@@ -1908,20 +1906,20 @@ function StereoAudioRecorder(mediaStream, config) {
 
             var view = new DataView(buffer);
 
-            // RIFF chunk descriptor/identifier
+            // RIFF chunk descriptor/identifier 
             writeUTFBytes(view, 0, 'RIFF');
 
             // RIFF chunk length
             view.setUint32(4, 44 + interleavedLength * 2, true);
 
-            // RIFF type
+            // RIFF type 
             writeUTFBytes(view, 8, 'WAVE');
 
-            // format chunk identifier
+            // format chunk identifier 
             // FMT sub-chunk
             writeUTFBytes(view, 12, 'fmt ');
 
-            // format chunk length
+            // format chunk length 
             view.setUint32(16, 16, true);
 
             // sample format (raw)
@@ -1930,23 +1928,23 @@ function StereoAudioRecorder(mediaStream, config) {
             // stereo (2 channels)
             view.setUint16(22, numberOfAudioChannels, true);
 
-            // sample rate
+            // sample rate 
             view.setUint32(24, sampleRate, true);
 
             // byte rate (sample rate * block align)
             view.setUint32(28, sampleRate * 2, true);
 
-            // block align (channel count * bytes per sample)
+            // block align (channel count * bytes per sample) 
             view.setUint16(32, numberOfAudioChannels * 2, true);
 
-            // bits per sample
+            // bits per sample 
             view.setUint16(34, 16, true);
 
             // data sub-chunk
-            // data chunk identifier
+            // data chunk identifier 
             writeUTFBytes(view, 36, 'data');
 
-            // data chunk length
+            // data chunk length 
             view.setUint32(40, interleavedLength * 2, true);
 
             // write the PCM samples
@@ -2301,10 +2299,6 @@ function CanvasRecorder(htmlElement, config) {
         }
     });
 
-    if(!!window.webkitRTCPeerConnection || !!window.webkitGetUserMedia) {
-        isCanvasSupportsStreamCapturing = false;
-    }
-
     var globalCanvas, globalContext, mediaStreamRecorder;
 
     if (isCanvasSupportsStreamCapturing) {
@@ -2360,7 +2354,7 @@ function CanvasRecorder(htmlElement, config) {
                 throw 'captureStream API are NOT available.';
             }
 
-            // Note: Jan 18, 2016 status is that,
+            // Note: Jan 18, 2016 status is that, 
             // Firefox MediaRecorder API can't record CanvasCaptureMediaStream object.
             mediaStreamRecorder = new MediaStreamRecorder(canvasMediaStream, {
                 mimeType: 'video/webm'
@@ -3607,27 +3601,27 @@ function GifRecorder(mediaStream, config) {
         // external library to record as GIF images
         gifEncoder = new GIFEncoder();
 
-        // void setRepeat(int iter)
-        // Sets the number of times the set of GIF frames should be played.
+        // void setRepeat(int iter) 
+        // Sets the number of times the set of GIF frames should be played. 
         // Default is 1; 0 means play indefinitely.
         gifEncoder.setRepeat(0);
 
-        // void setFrameRate(Number fps)
-        // Sets frame rate in frames per second.
+        // void setFrameRate(Number fps) 
+        // Sets frame rate in frames per second. 
         // Equivalent to setDelay(1000/fps).
         // Using "setDelay" instead of "setFrameRate"
         gifEncoder.setDelay(config.frameRate || 200);
 
-        // void setQuality(int quality)
-        // Sets quality of color quantization (conversion of images to the
-        // maximum 256 colors allowed by the GIF specification).
-        // Lower values (minimum = 1) produce better colors,
-        // but slow processing significantly. 10 is the default,
-        // and produces good color mapping at reasonable speeds.
+        // void setQuality(int quality) 
+        // Sets quality of color quantization (conversion of images to the 
+        // maximum 256 colors allowed by the GIF specification). 
+        // Lower values (minimum = 1) produce better colors, 
+        // but slow processing significantly. 10 is the default, 
+        // and produces good color mapping at reasonable speeds. 
         // Values greater than 20 do not yield significant improvements in speed.
         gifEncoder.setQuality(config.quality || 10);
 
-        // Boolean start()
+        // Boolean start() 
         // This writes the GIF Header and returns false if it fails.
         gifEncoder.start();
 

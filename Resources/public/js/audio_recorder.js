@@ -182,8 +182,8 @@ function uploadAudio() {
     formData.append('convert', true);
     // file is mandatory
     formData.append('file', blob);
-    //  var route = $('#submit-url').val();
-    var route = Routing.generate('innova_audio_recorder_submit');
+    var route = $('#submit-url').val();
+    //var route = Routing.generate('innova_audio_recorder_submit');
     xhr(route, formData, null, function(fileURL) {});
   }
 }
