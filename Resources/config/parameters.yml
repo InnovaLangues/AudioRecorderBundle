@@ -2,6 +2,3 @@
 parameters:
     # Listeners
     innova_audio_recorder.listener.audio_recorder.class:    Innova\AudioRecorderBundle\EventListener\Resource\AudioRecorderListener
-
-    # for upload
-    innova_audio_recorder.param.upload_files_directory:     "%kernel.root_dir%/../files"

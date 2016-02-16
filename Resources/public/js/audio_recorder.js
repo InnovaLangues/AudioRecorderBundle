@@ -179,7 +179,7 @@ function uploadAudio() {
     // type should be mandatory
     formData.append('type', 'webrtc_audio');
     // convert is optionnal
-    formData.append('convert', 'mp3');
+    formData.append('convert', true);
     // file is mandatory
     formData.append('file', blob);
     //  var route = $('#submit-url').val();
