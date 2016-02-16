@@ -52,6 +52,9 @@
     </div>
   </div>
   <input type="hidden" id="submit-url" value="{{ path('post_audio_recorder_blob') }}">
+  <!-- get parent id... there is probably a better way... see @core-bundle/Resources/public/js/resource/manager/* -->
+  <form id="fake-form" action="_nodeId"></form>
+
 </div>
 
 {% block javascripts %}

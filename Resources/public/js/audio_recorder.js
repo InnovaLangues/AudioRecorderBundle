@@ -26,7 +26,7 @@ var aRecorders = []; // collection of recorders
 var audios = []; // collection of audio objects
 var aStream; // current recorder stream
 
-
+var parentNode = 0;
 
 
 function recordAudio() {
@@ -61,6 +61,9 @@ function recordAudio() {
 
 $('.modal').on('shown.bs.modal', function(){
   console.log('modal shown');
+  console.log($('#fake-form').attr('action'));
+  parentNode = $('#fake-form').attr('action') !== '' ? $('#fake-form').attr('action') : 0;
+  console.log('parent node id ' + parentNode);
 });
 
 $('.modal').on('hide.bs.modal', function() {
@@ -125,7 +128,7 @@ function stopRecordingAudio() {
         aStream.stop();
       }
     });
-  }, 1500);
+  }, 1000);
 }
 
 function audioSelected(elem) {
@@ -188,6 +191,10 @@ function uploadAudio() {
     formData.append('convert', true);
     // file is mandatory
     formData.append('file', blob);
+
+    //parentId is mandatory
+    formData.append('parentId', parentNode);
+
     var route = $('#submit-url').val();
     xhr(route, formData, null, function(fileURL) {});
   }
@@ -217,7 +224,7 @@ function xhr(url, data, progress, callback) {
       aStream = null;
       aid = 0;
       // or generate route...
-      location.reload();
+      //location.reload();
 
     } else if(request.status === 500) {
       console.log('xhr error');

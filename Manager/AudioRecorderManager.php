@@ -58,7 +58,12 @@ class AudioRecorderManager
         );
         return $errors;
       }
-
+/*
+      $isStorageLeft = $this->resourceManager->checkEnoughStorageSpaceLeft(
+          $workspace,
+          $form->get('file')->getData()
+      );
+*/
       $doEncode =  isset($postData['convert']) && $postData['convert'] == true;
       // additional data
       $user = $this->tokenStorage->getToken()->getUser();
@@ -132,7 +137,13 @@ class AudioRecorderManager
       $file->setHashName($hashName);
       $finalExt = $doEncode ? $encodedExt : $ext;
       $file->setMimeType('audio/'.$finalExt);
-      $parent = $this->rm->getWorkspaceRoot($workspace);
+      if($postData['parentId']){
+        $parent = $this->rm->getNode($postData['parentId']);
+      } else {
+        $parent = $this->rm->getWorkspaceRoot($workspace);
+      }
+
+
 
       $resource = $this->rm->create($file, $rt, $user, $workspace, $parent);
       // remove temp original file
@@ -159,6 +170,11 @@ class AudioRecorderManager
       if(!isset($file) || $file === null || !$file ){
         return false;
       }
+
+      if(!isset($postData['parentId']) || $postData['parentId'] === '' ){
+        return false;
+      }
+
       return true;
     }
 
