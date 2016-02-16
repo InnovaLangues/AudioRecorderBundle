@@ -59,9 +59,13 @@ function recordAudio() {
   });
 }
 
+$('.modal').on('shown.bs.modal', function(){
+  console.log('modal shown');
+});
+
 $('.modal').on('hide.bs.modal', function() {
 
-  console.log('close modal');
+  console.log('modal closed');
 
   cancelAnalyserUpdates();
 
@@ -183,7 +187,6 @@ function uploadAudio() {
     // file is mandatory
     formData.append('file', blob);
     var route = $('#submit-url').val();
-    //var route = Routing.generate('innova_audio_recorder_submit');
     xhr(route, formData, null, function(fileURL) {});
   }
 }

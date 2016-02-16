@@ -2,22 +2,11 @@
 
 namespace Innova\AudioRecorderBundle\Controller;
 
-
-use FOS\RestBundle\Controller\FOSRestController;
-use FOS\RestBundle\Controller\Annotations\View;
-// Post Route Definition
-use FOS\RestBundle\Controller\Annotations\Post;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Innova\AudioRecorderBundle\Manager\AudioRecorderManager;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use JMS\DiExtraBundle\Annotation as DI;
 
-/**
- *
- */
 class AudioRecorderController
 {
 
@@ -33,8 +22,8 @@ class AudioRecorderController
         $this->arm = $arm;
     }
 
-
     /**
+     * uses FosRestBundle to automatically generate route
      * php app/console router:debug post_audio_recorder_blob for routing informations
      */
     public function postAudioRecorderBlobAction(Request $request)
@@ -50,6 +39,4 @@ class AudioRecorderController
 
         return new JsonResponse('success', 200);
     }
-
-
 }
