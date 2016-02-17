@@ -1,2 +1,9 @@
 # c
 creating_resource: Création de la ressource...
+
+# m
+my_recordings: Mes enregistrements
+
+# r
+resource_name: Choisir un nom pour la ressource qui sera générée (ou laisser le nom par défaut)
+resource_name_placeholder: Le nom de la resource est obligatoire.

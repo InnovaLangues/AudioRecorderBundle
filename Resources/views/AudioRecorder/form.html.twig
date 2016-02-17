@@ -29,13 +29,23 @@
                 </div>
                 <hr/>
                 <div class="row">
+                    <div class="col-md-12 text-center">
+                        <div class="form-group">
+                            <label for="resource-name-input">{{ 'resource_name'|trans({}, 'innova_audio_recorder') }}</label>
+                            <input required="required" id="resource-name-input" type="text" value="recorded-audio-{{"now"|date("YmdHs")}}" class="form-control" name="resourceName" placeholder="">
+                        </div>
+                        
+                    </div>
+                </div>
+                <hr/>
+                <div class="row">
                     <div class="col-md-12">
                         <div>
                             <div class="row">
                                 <div class="col-md-12">
                                     <div id="audio-records-container">
                                         <h3>
-                                            <small>Mes enregistrements</small>
+                                            <small>{{ 'my_recordings'|trans({}, 'innova_audio_recorder') }}</small>
                                         </h3>
                                         <hr/>
                                     </div>

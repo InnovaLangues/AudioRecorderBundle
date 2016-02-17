@@ -9,6 +9,7 @@ use Claroline\CoreBundle\Event\CreateFormResourceEvent;
 use Claroline\CoreBundle\Event\CreateResourceEvent;
 use Innova\AudioRecorderBundle\Manager\AudioRecorderManager;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Claroline\CoreBundle\Event\DeleteResourceEvent;
 
 /**
  *  @DI\Service()
@@ -84,6 +85,28 @@ class AudioRecorderListener
           'InnovaAudioRecorderBundle:AudioRecorder:form.html.twig', array('resourceType' => 'innova_audio_recorder')
         );
         $event->setResponseContent($content);
+        $event->stopPropagation();
+    }
+    
+     /**
+     * @DI\Observe("delete_innova_audio_recorder")
+     *
+     * @param DeleteResourceEvent $event
+     */
+    public function onDelete(DeleteResourceEvent $event)
+    {
+       /* $workspaceCode = $event->getResource()
+            ->getResourceNode()
+            ->getWorkspace()
+            ->getCode();*/
+        $pathName = $this->container->getParameter('claroline.param.files_directory').
+            DIRECTORY_SEPARATOR.
+            $event->getResource()->getHashName();
+
+        if (file_exists($pathName)) {
+            $event->setFiles(array($pathName));
+        }
+
         $event->stopPropagation();
     }
 }

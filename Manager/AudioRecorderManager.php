@@ -82,17 +82,20 @@ class AudioRecorderManager
         }
         
         // the filename that will be in database (a human readable one should be better)
-        $fileBaseName = $this->claroUtils->generateGuid();
-        $fileName = $fileBaseName . '.' . $extension;
+        //$fileBaseName = $this->claroUtils->generateGuid();
+        $fileBaseName = $postData['fileName'];
+        $uniqueBaseName = $this->claroUtils->generateGuid();
+        $fileName = $uniqueBaseName . '.' . $extension;
+        
 
-        $hashNameWithoutExtension = $this->getFileHashNameWithoutExtension($fileBaseName, $workspace);
-        $hashName = $doEncode ? $hashNameWithoutExtension . '.mp3' : $hashNameWithoutExtension . '.' . $extension;
+        $baseHashName = $this->getBaseFileHashName($uniqueBaseName, $workspace);
+        $hashName = $doEncode ? $baseHashName . '.mp3' : $baseHashName . '.' . $extension;
         // file size @ToBe overriden if doEncode = true
         $size = $blob->getSize();
 
         if ($doEncode) {
             // the filename after encoding
-            $encodedName = $fileBaseName . '.' . $encodingExt;
+            $encodedName = $uniqueBaseName . '.' . $encodingExt;
             // upload original file in temp upload (ie web/uploads) dir
             $blob->move($this->tempUploadDir, $fileName);
 
@@ -123,7 +126,7 @@ class AudioRecorderManager
 
         $file = new File();
         $file->setSize($size);
-        $name = $doEncode ? $encodedName:$fileName;
+        $name = $doEncode ? $fileBaseName.'.'.$encodingExt:$fileBaseName.'.'.$extension;
         $file->setName($name);
         $file->setHashName($hashName);
         $file->setMimeType($mimeType);
@@ -131,13 +134,13 @@ class AudioRecorderManager
         return $file;
     }
 
-    private function getFileHashNameWithoutExtension($fileBaseName, Workspace $workspace = null)
+    private function getBaseFileHashName($uniqueBaseName, Workspace $workspace = null)
     {
         $hashName = '';
         if (!is_null($workspace)) {
-            $hashName = 'WORKSPACE_' . $workspace->getId() . DIRECTORY_SEPARATOR . $fileBaseName;
+            $hashName = 'WORKSPACE_' . $workspace->getId() . DIRECTORY_SEPARATOR . $uniqueBaseName;
         } else {
-            $hashName = $this->tokenStorage->getToken()->getUsername() . DIRECTORY_SEPARATOR . $fileBaseName;
+            $hashName = $this->tokenStorage->getToken()->getUsername() . DIRECTORY_SEPARATOR . $uniqueBaseName;
         }
         return $hashName;
     }
@@ -145,10 +148,10 @@ class AudioRecorderManager
     /**
      * Checks if the data sent by the Ajax Form contain all mandatory fields
      * @param Array  $postData
+     * @param UploadedFile  $file the blob sent by webrtc
      */
     private function validateParams($postData, UploadedFile $file)
     {
-
         $availableNavs = ["firefox", "chrome"];
         if (!isset($postData['nav']) || $postData['nav'] === '' || !in_array($postData['nav'], $availableNavs)) {
             return false;
@@ -158,11 +161,14 @@ class AudioRecorderManager
         if (!isset($postData['type']) || $postData['type'] === '' || !in_array($postData['type'], $availableTypes)) {
             return false;
         }
+        
+        if(!isset($postData['fileName']) || $postData['fileName'] === ''){
+            return false;
+        }
 
         if (!isset($file) || $file === null || !$file) {
             return false;
         }
-
         return true;
     }
 
