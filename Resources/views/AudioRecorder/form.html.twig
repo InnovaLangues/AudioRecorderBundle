@@ -1,72 +1,69 @@
 {% block stylesheets %}
 
-{% stylesheets debug=false filter='lessphp, cssmin' output='vendor/innova/audio-recorder/css/innova-audio-recorder.min.css'
+    {% stylesheets debug=false filter='lessphp, cssmin' output='vendor/innova/audio-recorder/css/innova-audio-recorder.min.css'
         '@InnovaAudioRecorderBundle/Resources/public/less/app.less'
     %}
-<link href="{{ asset_url }}" rel="stylesheet" media="screen"/>
-{% endstylesheets %}
+    <link href="{{ asset_url }}" rel="stylesheet" media="screen"/>
+    {% endstylesheets %}
 {% endblock %}
 
 <!-- MODAL FORM -->
 
 <div class="modal-dialog audio-recorder-creation-modal" id="audio-recorder-modal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-      <h4 class="modal-title">Audio Recorder</h4>
-    </div>
-    <div class="modal-body">
-      <div id="audioRecorderRow" class="row">
-        <div class="col-md-12 text-center">
-          <div class="btn-group">
-            <button type="button" role="button" class="btn btn-danger fa fa-circle" id="audio-record-start" title="Commencer l'enregistrement" onclick="recordAudio()"></button>
-            <button type="button" role="button" class="btn btn-default fa fa-stop" id="audio-record-stop" title="Arrêter l'enregistrement" disabled="disabled" onclick="stopRecordingAudio()"></button>
-
-          </div>
-          <canvas class="pull-right" id="analyser" title="Mic level" width="34px" height="25px"></canvas>
-        </div>
-      </div>
-      <hr/>
-      <div class="row">
-        <div class="col-md-12">
-          <div>
-            <div class="row">
-              <div class="col-md-12">
-                <div id="audio-records-container">
-                  <h3>
-                    <small>Mes enregistrements</small>
-                  </h3>
-                  <hr/>
-                </div>
-              </div>
+    <form id="arForm" action="{{ path('claro_resource_create', {'resourceType':resourceType, 'parentId':'_nodeId'}) }}" onbeforesubmit="beforeSubmit()" enctype="multipart/form-data">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h4 class="modal-title">Audio Recorder</h4>
             </div>
-          </div>
+            <div class="modal-body">
+                <div id="audioRecorderRow" class="row">
+                    <div class="col-md-12 text-center">
+                        <div class="btn-group">
+                            <button type="button" role="button" class="btn btn-danger fa fa-circle" id="audio-record-start" title="Commencer l'enregistrement" onclick="recordAudio()"></button>
+                            <button type="button" role="button" class="btn btn-default fa fa-stop" id="audio-record-stop" title="Arrêter l'enregistrement" disabled="disabled" onclick="stopRecordingAudio()"></button>
+
+                        </div>
+                        <canvas class="pull-right" id="analyser" title="Mic level" width="34px" height="25px"></canvas>
+                    </div>
+                </div>
+                <hr/>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div id="audio-records-container">
+                                        <h3>
+                                            <small>Mes enregistrements</small>
+                                        </h3>
+                                        <hr/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div id="progress"></div>
+                <button type="button" role="button" class="btn btn-default" data-dismiss="modal">{{ 'cancel'|trans({}, 'platform') }}</button>
+                <button type="button" id="submitButton" disabled="disabled" onclick="uploadAudio()" class="btn btn-primary">{{ 'ok'|trans({}, 'platform') }}</button>
+            </div>
         </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <div id="progress"></div>
-      <button type="button" role="button" class="btn btn-default" data-dismiss="modal">{{ 'cancel'|trans({}, 'platform') }}</button>
-      <button type="button" role="button" id="submitButton" disabled="disabled" onclick="uploadAudio()" class="btn btn-primary">{{ 'ok'|trans({}, 'platform') }}</button>
-
-    </div>
-  </div>
-  <input type="hidden" id="submit-url" value="{{ path('post_audio_recorder_blob') }}">
-  <!-- get parent id... there is probably a better way... see @core-bundle/Resources/public/js/resource/manager/* -->
-  <form id="fake-form" action="_nodeId"></form>
-
+    </form>
 </div>
 
 {% block javascripts %}
 
-<script type="text/javascript" src="{{ url('bazinga_jstranslation_js', { 'domain':'innova_audio_recorder' }) }}"></script>
+    <script type="text/javascript" src="{{ url('bazinga_jstranslation_js', { 'domain':'innova_audio_recorder' }) }}"></script>
 
-{% javascripts debug=false filter='jsmin' output='vendor/innova/audio-recorder/js/innova-audio-recorder.js'
+    {% javascripts debug=false filter='jsmin' output='vendor/innova/audio-recorder/js/innova-audio-recorder.js'
   '@InnovaAudioRecorderBundle/Resources/public/js/libs/*'
   '@InnovaAudioRecorderBundle/Resources/public/js/audio_recorder.js'
-        %}
+    %}
 
-<script src="{{ asset_url }}"></script>
-{% endjavascripts %}
+    <script src="{{ asset_url }}"></script>
+    {% endjavascripts %}
 
 {% endblock %}

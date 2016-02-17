@@ -4,12 +4,14 @@ namespace Innova\AudioRecorderBundle\Manager;
 
 use Claroline\CoreBundle\Persistence\ObjectManager;
 use Claroline\CoreBundle\Manager\ResourceManager;
+use Claroline\CoreBundle\Entity\Resource\ResourceNode;
 use JMS\DiExtraBundle\Annotation as DI;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Claroline\CoreBundle\Entity\Resource\File;
 use Symfony\Component\HttpFoundation\File\File as sFile;
 use Symfony\Component\Filesystem\Filesystem;
+use Claroline\CoreBundle\Entity\Workspace\Workspace;
 
 /**
  * @DI\Service("innova.audio_recorder.manager")
@@ -17,15 +19,13 @@ use Symfony\Component\Filesystem\Filesystem;
 class AudioRecorderManager
 {
 
-
     protected $rm;
     protected $fileDir;
     protected $tempUploadDir;
     protected $tokenStorage;
     protected $claroUtils;
     protected $container;
-
-
+    protected $workspaceManager;
 
     /**
      * @DI\InjectParams({
@@ -47,136 +47,128 @@ class AudioRecorderManager
         $this->tempUploadDir = $uploadDir;
         $this->tokenStorage = $container->get('security.token_storage');
         $this->claroUtils = $container->get('claroline.utilities.misc');
-    }
+        $this->workspaceManager = $container->get('claroline.manager.workspace_manager');
+    }   
 
+    public function uploadFileAndCreateREsource($postData, UploadedFile $blob, Workspace $workspace = null)
+    {
+        // final file upload dir
+        $targetDir = '';
+        if (!is_null($workspace)) {
+            $targetDir = $this->workspaceManager->getStorageDirectory($workspace);
+        } else {
+            $targetDir = $this->fileDir . DIRECTORY_SEPARATOR . $this->tokenStorage->getToken()->getUsername();
+        }
+        // if the taget dir does not exist, create it
+        $fs = new FileSystem();
+        if (!$fs->exists($targetDir)) {
+          $fs->mkdir($targetDir);
+        } 
 
-    public function handleResourceCreation($postData, UploadedFile $blob){
-      $errors = [];
-      if(!$this->validateParams($postData, $blob)){
-        $errors = array(
-          'message' => 'some mandatory params are missing...'
-        );
-        return $errors;
-      }
-/*
-      $isStorageLeft = $this->resourceManager->checkEnoughStorageSpaceLeft(
-          $workspace,
-          $form->get('file')->getData()
-      );
-*/
-      $doEncode =  isset($postData['convert']) && $postData['convert'] == true;
-      // additional data
-      $user = $this->tokenStorage->getToken()->getUser();
-      $workspace = $user->getPersonalWorkspace();
+        /*if (!is_dir($targetDir)) {
+            mkdir($targetDir);
+        }*/
 
-      $uploadDir = $this->fileDir.DIRECTORY_SEPARATOR.'WORKSPACE_'.$workspace->getId();
-      $fs = new FileSystem();
-      if (!$fs->exists($uploadDir)) {
-          $fs->mkdir($uploadDir);
-      }
+        $doEncode = isset($postData['convert']) && $postData['convert'] == true;
+        $isFirefox = $postData['nav'] === 'firefox';
+        $extension = $isFirefox ? 'ogg' : 'wav';
+        $encodingExt = 'mp3';
+        $mimeType = $doEncode ? 'audio/' . $encodingExt : 'audio/' . $extension;
 
-      // data received from request
-      $isFirefox = $postData['nav'] === 'firefox';
-      $ext = $isFirefox ? 'ogg' : 'wav';
-      // the filename that will be in database (a human readable one should be better)
-      $fileName = $this->claroUtils->generateGuid().'.'.$ext;
+        $errors = [];
+        if (!$this->validateParams($postData, $blob)) {
+            $errors = array(
+                'message' => 'some mandatory params are missing...'
+            );
+            return $errors;
+        }
+        
+        // the filename that will be in database (a human readable one should be better)
+        $fileBaseName = $this->claroUtils->generateGuid();
+        $fileName = $fileBaseName . '.' . $extension;
 
-      // this is the path to the file (original file) ToBe overriden if doEncode = true
-      $hashName = 'WORKSPACE_'.$workspace->getId().DIRECTORY_SEPARATOR.$fileName;
-      // file size @ToBe overriden if doEncode = true
-      $size = $blob->getSize();
+        $hashNameWithoutExtension = $this->getFileHashNameWithoutExtension($fileBaseName, $workspace);
+        $hashName = $doEncode ? $hashNameWithoutExtension . '.mp3' : $hashNameWithoutExtension . '.' . $extension;
+        // file size @ToBe overriden if doEncode = true
+        $size = $blob->getSize();
 
-      if($doEncode){
-        // the output format we want (mp3 has been the choosen one)
-        $encodedExt = 'mp3';
-        // the filename after encoding
-        $encodedName = $this->claroUtils->generateGuid().'.'.$encodedExt;
-        // upload original file in temp upload (ie web/uploads) dir
-        $blob->move($this->tempUploadDir, $fileName);
+        if ($doEncode) {
+            // the filename after encoding
+            $encodedName = $fileBaseName . '.' . $encodingExt;
+            // upload original file in temp upload (ie web/uploads) dir
+            $blob->move($this->tempUploadDir, $fileName);
 
-        // encode original file to mp3
-        $cmd = 'avconv -i '.$this->tempUploadDir.DIRECTORY_SEPARATOR.$fileName.' -acodec libmp3lame -ab 128k '.$this->tempUploadDir.DIRECTORY_SEPARATOR.$encodedName;
-        $output;
-        $returnVar;
-        $fs = new Filesystem();
-        exec($cmd, $output, $returnVar);
+            // encode original file to mp3
+            $cmd = 'avconv -i ' . $this->tempUploadDir . DIRECTORY_SEPARATOR . $fileName . ' -acodec libmp3lame -ab 128k ' . $this->tempUploadDir . DIRECTORY_SEPARATOR . $encodedName;
+            $output;
+            $returnVar;
+            exec($cmd, $output, $returnVar);
 
-        // cmd error
-        if ($returnVar !== 0) {
-          $errors = array(
-            'message' => 'Encoding error with command ' . $cmd
-          );
-          return $errors;
+            // cmd error
+            if ($returnVar !== 0) {
+                $errors = array(
+                    'message' => 'Encoding error with command ' . $cmd
+                );
+                return $errors;
+            }
+
+            // copy the encoded file to user workspace directory
+            $fs->copy($this->tempUploadDir . DIRECTORY_SEPARATOR . $encodedName, $targetDir . DIRECTORY_SEPARATOR . $encodedName);
+            // get encoded file size...
+            $sFile = new sFile($targetDir . DIRECTORY_SEPARATOR . $encodedName);
+            $size = $sFile->getSize();
+            // remove temp encoded file
+            @unlink($this->tempUploadDir . DIRECTORY_SEPARATOR . $encodedName);
+            // remove original non encoded file from temp dir
+            @unlink($this->tempUploadDir . DIRECTORY_SEPARATOR . $fileName);
+            
+        } else {
+            $blob->move($targetDir, $fileName);
         }
 
-        // this is the path to the file (encoded file)
-        $hashName = 'WORKSPACE_'.$workspace->getId().DIRECTORY_SEPARATOR.$encodedName;
+        $file = new File();
+        $file->setSize($size);
+        $name = $doEncode ? $encodedName:$fileName;
+        $file->setName($name);
+        $file->setHashName($hashName);
+        $file->setMimeType($mimeType);
 
-        // copy the encoded file to user workspace directory
-        $fs->copy($this->tempUploadDir.DIRECTORY_SEPARATOR.$encodedName, $uploadDir.DIRECTORY_SEPARATOR.$encodedName);
-        // get encoded file size...
-        $sFile = new sFile($uploadDir.DIRECTORY_SEPARATOR.$encodedName);
-        $size = $sFile->getSize();
-        // remove temp encoded file
-        @unlink($this->tempUploadDir.DIRECTORY_SEPARATOR.$encodedName);
+        return $file;
+    }
 
-      } else {
-        $blob->move($uploadDir, $fileName);
-      }
-
-      $rt = $this->rm->getResourceTypeByName('file');
-      if (!$rt) {
-          $rt = new ResourceType();
-          $rt->setName('file');
-      }
-      // create resource
-      $file = new File();
-      $file->setSize($size);
-      $name = $doEncode ? $encodedName : $fileName;
-      $file->setName($name);
-      $file->setHashName($hashName);
-      $finalExt = $doEncode ? $encodedExt : $ext;
-      $file->setMimeType('audio/'.$finalExt);
-      if($postData['parentId']){
-        $parent = $this->rm->getNode($postData['parentId']);
-      } else {
-        $parent = $this->rm->getWorkspaceRoot($workspace);
-      }
-
-
-
-      $resource = $this->rm->create($file, $rt, $user, $workspace, $parent);
-      // remove temp original file
-      @unlink($this->tempUploadDir.DIRECTORY_SEPARATOR.$fileName);
-      return $errors;
+    private function getFileHashNameWithoutExtension($fileBaseName, Workspace $workspace = null)
+    {
+        $hashName = '';
+        if (!is_null($workspace)) {
+            $hashName = 'WORKSPACE_' . $workspace->getId() . DIRECTORY_SEPARATOR . $fileBaseName;
+        } else {
+            $hashName = $this->tokenStorage->getToken()->getUsername() . DIRECTORY_SEPARATOR . $fileBaseName;
+        }
+        return $hashName;
     }
 
     /**
-    * Checks if the data sent by the Ajax Form contain all mandatory fields
-    * @param Array  $postData
-    */
-    private function validateParams($postData, UploadedFile $file){
+     * Checks if the data sent by the Ajax Form contain all mandatory fields
+     * @param Array  $postData
+     */
+    private function validateParams($postData, UploadedFile $file)
+    {
 
-      $availableNavs = ["firefox", "chrome"];
-      if(!isset($postData['nav']) || $postData['nav'] === '' || !in_array($postData['nav'], $availableNavs)){
-        return false;
-      }
+        $availableNavs = ["firefox", "chrome"];
+        if (!isset($postData['nav']) || $postData['nav'] === '' || !in_array($postData['nav'], $availableNavs)) {
+            return false;
+        }
 
-      $availableTypes = ["webrtc_audio", "webrtc_video"];
-      if(!isset($postData['type']) || $postData['type'] === '' || !in_array($postData['type'], $availableTypes)){
-        return false;
-      }
+        $availableTypes = ["webrtc_audio", "webrtc_video"];
+        if (!isset($postData['type']) || $postData['type'] === '' || !in_array($postData['type'], $availableTypes)) {
+            return false;
+        }
 
-      if(!isset($file) || $file === null || !$file ){
-        return false;
-      }
+        if (!isset($file) || $file === null || !$file) {
+            return false;
+        }
 
-      if(!isset($postData['parentId']) || $postData['parentId'] === '' ){
-        return false;
-      }
-
-      return true;
+        return true;
     }
-
 
 }

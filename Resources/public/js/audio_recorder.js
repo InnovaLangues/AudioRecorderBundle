@@ -26,7 +26,7 @@ var aRecorders = []; // collection of recorders
 var audios = []; // collection of audio objects
 var aStream; // current recorder stream
 
-var parentNode = 0;
+var recordEndTimeOut = 750;
 
 
 function recordAudio() {
@@ -88,7 +88,10 @@ $('.modal').on('hide.bs.modal', function() {
   aid = 0;
 });
 
-
+function beforeSubmit(){
+    uploadAudio();
+    return false;
+}
 
 function stopRecordingAudio() {
   var aRec = audioRecorder;
@@ -128,7 +131,7 @@ function stopRecordingAudio() {
         aStream.stop();
       }
     });
-  }, 1000);
+  }, recordEndTimeOut);
 }
 
 function audioSelected(elem) {
@@ -191,11 +194,7 @@ function uploadAudio() {
     formData.append('convert', true);
     // file is mandatory
     formData.append('file', blob);
-
-    //parentId is mandatory
-    formData.append('parentId', parentNode);
-
-    var route = $('#submit-url').val();
+    var route = $('#arForm').attr('action');    
     xhr(route, formData, null, function(fileURL) {});
   }
 }
