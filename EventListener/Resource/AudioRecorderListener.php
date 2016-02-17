@@ -10,6 +10,10 @@ use Claroline\CoreBundle\Event\CreateResourceEvent;
 use Innova\AudioRecorderBundle\Manager\AudioRecorderManager;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Claroline\CoreBundle\Event\DeleteResourceEvent;
+use Claroline\CoreBundle\Event\CopyResourceEvent;
+use Claroline\CoreBundle\Event\DownloadResourceEvent;
+use Claroline\CoreBundle\Entity\Resource\File;
+use Claroline\CoreBundle\Entity\Resource\ResourceNode;
 
 /**
  *  @DI\Service()
@@ -107,6 +111,67 @@ class AudioRecorderListener
             $event->setFiles(array($pathName));
         }
 
+        $event->stopPropagation();
+    }
+    
+    /**
+     * @DI\Observe("copy_innova_audio_recorder")
+     *
+     * @param CopyResourceEvent $event
+     */
+    public function onCopy(CopyResourceEvent $event)
+    {
+        $newFile = $this->copy($event->getResource(), $event->getParent());
+        $event->setCopy($newFile);
+        $event->stopPropagation();
+    }
+    
+     /**
+     * Copies a file (no persistence).
+     *
+     * @param File $resource
+     *
+     * @return File
+     */
+    private function copy(File $resource, ResourceNode $destParent)
+    {
+        $ds = DIRECTORY_SEPARATOR;
+        $workspace = $destParent->getWorkspace();
+        $newFile = new File();
+        $newFile->setSize($resource->getSize());
+        $newFile->setName($resource->getName());
+        $newFile->setMimeType($resource->getMimeType());
+        $hashName = 'WORKSPACE_'.$workspace->getId().
+            $ds.
+            $this->container->get('claroline.utilities.misc')->generateGuid().
+            '.'.
+            pathinfo($resource->getHashName(), PATHINFO_EXTENSION);
+        $newFile->setHashName($hashName);
+        $fileDir =  $this->container->getParameter('claroline.param.files_directory');
+        $filePath = $fileDir.$ds.$resource->getHashName();
+        $newPath = $fileDir.$ds.$hashName;
+        $workspaceDir = $fileDir.$ds.'WORKSPACE_'.$workspace->getId();
+
+        if (!is_dir($workspaceDir)) {
+            mkdir($workspaceDir);
+        }
+        copy($filePath, $newPath);
+
+        return $newFile;
+    }
+
+    /**
+     * @DI\Observe("download_innova_audio_recorder")
+     *
+     * @param DownloadResourceEvent $event
+     */
+    public function onDownload(DownloadResourceEvent $event)
+    {
+        
+        $event->setItem(
+            $this->container
+                ->getParameter('claroline.param.files_directory').DIRECTORY_SEPARATOR.$event->getResource()->getHashName()
+        );
         $event->stopPropagation();
     }
 }
