@@ -223,7 +223,7 @@ function xhr(url, data, progress, callback) {
       aStream = null;
       aid = 0;
       // or generate route...
-      //location.reload();
+      location.reload();
 
     } else if(request.status === 500) {
       console.log('xhr error');

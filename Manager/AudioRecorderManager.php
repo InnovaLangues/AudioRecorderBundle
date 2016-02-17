@@ -4,7 +4,6 @@ namespace Innova\AudioRecorderBundle\Manager;
 
 use Claroline\CoreBundle\Persistence\ObjectManager;
 use Claroline\CoreBundle\Manager\ResourceManager;
-use Claroline\CoreBundle\Entity\Resource\ResourceNode;
 use JMS\DiExtraBundle\Annotation as DI;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -50,6 +49,13 @@ class AudioRecorderManager
         $this->workspaceManager = $container->get('claroline.manager.workspace_manager');
     }   
 
+    /**
+     * Handle web rtc blob file upload, conversion and Claroline File resource creation
+     * @param type $postData
+     * @param UploadedFile $blob
+     * @param Workspace $workspace
+     * @return File
+     */
     public function uploadFileAndCreateREsource($postData, UploadedFile $blob, Workspace $workspace = null)
     {
         // final file upload dir
@@ -60,14 +66,10 @@ class AudioRecorderManager
             $targetDir = $this->fileDir . DIRECTORY_SEPARATOR . $this->tokenStorage->getToken()->getUsername();
         }
         // if the taget dir does not exist, create it
-        $fs = new FileSystem();
+        $fs = new Filesystem();
         if (!$fs->exists($targetDir)) {
           $fs->mkdir($targetDir);
-        } 
-
-        /*if (!is_dir($targetDir)) {
-            mkdir($targetDir);
-        }*/
+        }
 
         $doEncode = isset($postData['convert']) && $postData['convert'] == true;
         $isFirefox = $postData['nav'] === 'firefox';
@@ -75,12 +77,8 @@ class AudioRecorderManager
         $encodingExt = 'mp3';
         $mimeType = $doEncode ? 'audio/' . $encodingExt : 'audio/' . $extension;
 
-        $errors = [];
-        if (!$this->validateParams($postData, $blob)) {
-            $errors = array(
-                'message' => 'some mandatory params are missing...'
-            );
-            return $errors;
+        if (!$this->validateParams($postData, $blob)) {            
+            return null;
         }
         
         // the filename that will be in database (a human readable one should be better)
@@ -106,10 +104,7 @@ class AudioRecorderManager
 
             // cmd error
             if ($returnVar !== 0) {
-                $errors = array(
-                    'message' => 'Encoding error with command ' . $cmd
-                );
-                return $errors;
+                return null;
             }
 
             // copy the encoded file to user workspace directory

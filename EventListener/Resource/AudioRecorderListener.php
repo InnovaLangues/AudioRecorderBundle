@@ -54,34 +54,22 @@ class AudioRecorderListener
 
     /**
      * @DI\Observe("create_innova_audio_recorder")
-     *
+     * Main problem here is that ResourceController handle errors by refering to the form
+     * But File form is not adapted to our case...
      * @param CreateResourceEvent $event
      */
     public function onCreate(CreateResourceEvent $event)
     {
         $request = $this->container->get('request');
-
-
-        $formData = $request->request->all();
-        
+        $formData = $request->request->all();        
         $blob = $request->files->get('file');
-        //$parent = $event->getParent();
+        
         $workspace = $event->getParent()->getWorkspace();
-        //$workspaceDir = $this->workspaceManager->getStorageDirectory($workspace);
         $file = $this->arm->uploadFileAndCreateResource($formData, $blob, $workspace);
         $event->setPublished(true);
         $event->setResourceType('file');
         $event->setResources(array($file));
         $event->stopPropagation();
-        
-
-        //$errors = $this->arm->handleResourceCreation($formData, $blob);
-        // Create form POPUP
-        /*$content = $this->container->get('templating')->render(
-          'InnovaAudioRecorderBundle:AudioRecorder:form.html.twig'
-        );
-        $event->setResponseContent($content);
-        $event->stopPropagation();*/
     }
 
     /**

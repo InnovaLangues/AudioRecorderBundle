@@ -23,6 +23,7 @@ class AudioRecorderController
     }
 
     /**
+     * Not used anymore
      * uses FosRestBundle to automatically generate route
      * php app/console router:debug post_audio_recorder_blob for routing informations
      */
