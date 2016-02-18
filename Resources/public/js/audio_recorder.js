@@ -148,10 +148,6 @@ function audioSelected(elem) {
     $('#submitButton').prop('disabled', false);
 }
 
-
-
-
-
 function playAudio(elem) {
     var index = $(elem).closest('.recorded-audio-row').attr('data-index');
     audios[index].play();
@@ -253,7 +249,7 @@ function xhr(url, data, progress, callback) {
         // if we want to use progress bar
     };
 
-    request.open('POST', url);
+    request.open('POST', url, true);
     request.send(data);
 }
 
