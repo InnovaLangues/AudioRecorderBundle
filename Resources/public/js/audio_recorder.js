@@ -1,13 +1,9 @@
 "use strict";
 
-
-
-
 var isFirefox = !!navigator.mozGetUserMedia;
 
 var audioObject;
 var audioRecorder; // WebRtc object
-
 
 var audioContext = new window.AudioContext();
 var audioInput = null,
@@ -20,14 +16,13 @@ var canvasWidth, canvasHeight;
 var gradient;
 var meter;
 
-
 var aid = 0; // audio array current recording index
 var aRecorders = []; // collection of recorders
 var audios = []; // collection of audio objects
 var aStream; // current recorder stream
 
-var recordEndTimeOut = 750;
-
+// avoid the recorded file to be chunked by setting a slight timeout
+var recordEndTimeOut = 512;
 
 function recordAudio() {
 
@@ -40,7 +35,7 @@ function recordAudio() {
 
         var options = {
             type: 'audio',
-            bufferSize: 0,
+            bufferSize: 1024,
             sampleRate: 44100
         };
 
