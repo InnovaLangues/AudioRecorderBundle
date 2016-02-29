@@ -58,6 +58,8 @@ class AudioRecorderManager
      */
     public function uploadFileAndCreateREsource($postData, UploadedFile $blob, Workspace $workspace = null)
     {
+        
+        $errors = array();
         // final file upload dir
         $targetDir = '';
         if (!is_null($workspace)) {
@@ -77,8 +79,9 @@ class AudioRecorderManager
         $encodingExt = 'mp3';
         $mimeType = $doEncode ? 'audio/' . $encodingExt : 'audio/' . $extension;
 
-        if (!$this->validateParams($postData, $blob)) {            
-            return null;
+        if (!$this->validateParams($postData, $blob)) {
+            array_push($errors, 'one or more request parameters are missing.');
+            return array('file' => null, 'errors' => $errors);
         }
         
         // the filename that will be in database (a human readable one should be better)
@@ -107,7 +110,8 @@ class AudioRecorderManager
 
             // cmd error
             if ($returnVar !== 0) {
-                return null;
+                array_push($errors, 'File conversion failed with command ' . $cmd . ' and returned ' . $returnVar);
+                return array('file' => null, 'errors' => $errors);
             }
 
             // copy the encoded file to user workspace directory
@@ -131,7 +135,8 @@ class AudioRecorderManager
         $file->setHashName($hashName);
         $file->setMimeType($mimeType);
 
-        return $file;
+        //return $file;
+        return array('file' => $file, 'errors' => []);
     }
 
     private function getBaseFileHashName($uniqueBaseName, Workspace $workspace = null)
@@ -153,16 +158,11 @@ class AudioRecorderManager
     private function validateParams($postData, UploadedFile $file)
     {
         $availableNavs = ["firefox", "chrome"];
-        if (!isset($postData['nav']) || $postData['nav'] === '' || !in_array($postData['nav'], $availableNavs)) {
+        if (!array_key_exists('nav', $postData) || $postData['nav'] === '' || !in_array($postData['nav'], $availableNavs)) {
             return false;
-        }
-
-        $availableTypes = ["webrtc_audio", "webrtc_video"];
-        if (!isset($postData['type']) || $postData['type'] === '' || !in_array($postData['type'], $availableTypes)) {
-            return false;
-        }
+        }       
         
-        if(!isset($postData['fileName']) || $postData['fileName'] === ''){
+        if(!array_key_exists('fileName', $postData) || !isset($postData['fileName']) || $postData['fileName'] === ''){
             return false;
         }
 

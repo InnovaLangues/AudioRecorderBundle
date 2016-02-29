@@ -93,11 +93,6 @@ $('.modal').on('hide.bs.modal', function () {
     aid = 0;
 });
 
-function beforeSubmit() {
-    uploadAudio();
-    return false;
-}
-
 function stopRecordingAudio() {
     var aRec = audioRecorder;
     $('#audio-record-start').prop('disabled', '');
@@ -190,8 +185,6 @@ function uploadAudio() {
         } else {
             formData.append('nav', 'chrome');
         }
-        // type should be mandatory
-        formData.append('type', 'webrtc_audio');
         // convert is optionnal
         formData.append('convert', true);
         // file is mandatory
@@ -206,13 +199,13 @@ function uploadAudio() {
 }
 
 function xhr(url, data, progress, callback) {
-    var request = new XMLHttpRequest();
 
     var message = Translator.trans('creating_resource', {}, 'innova_audio_recorder');
     // tell the user that his action has been taken into account
     $('#submitButton').text(message);
     $('#submitButton').attr('disabled', true);
 
+    var request = new XMLHttpRequest();
     request.onreadystatechange = function () {
         if (request.readyState === 4 && request.status === 200) {
             console.log('xhr end with success');
@@ -228,15 +221,23 @@ function xhr(url, data, progress, callback) {
             analyserNode = null;
             aStream = null;
             aid = 0;
-            // or generate route...
+            // use reload or generate route...
             location.reload();
 
         } else if (request.status === 500) {
             console.log('xhr error');
-            console.log(request);
-            console.log(request.response.message);
-            $('#submitButton').text(Translator.trans('ok', {}, 'platform'));
-            $('#submitButton').attr('disabled', false);
+            //var errorMessage = Translator.trans('resource_creation_error', {}, 'innova_audio_recorder');
+            //$('#form-error-msg').text(errorMessage);
+            $('#form-error-msg-row').show();
+            // allow user to save the recorded file on his device...
+            var index = -1;
+            index = $('input:checked').closest('.recorded-audio-row').attr('data-index');
+            if (index > -1) {
+                // show download button
+                $('#btn-audio-download').show();
+                $('#form-content').hide();
+                $('#submitButton').hide();
+            }
         }
     };
 
@@ -246,6 +247,13 @@ function xhr(url, data, progress, callback) {
 
     request.open('POST', url, true);
     request.send(data);
+
+}
+
+function downloadAudio() {
+    var index = $('input:checked').closest('.recorded-audio-row').attr('data-index');
+    var recorder = aRecorders[index];
+    recorder.save();
 }
 
 function captureUserMedia(mediaConstraints, successCallback, errorCallback) {

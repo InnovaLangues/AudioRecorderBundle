@@ -20,6 +20,7 @@ use Claroline\CoreBundle\Entity\Resource\ResourceNode;
  */
 class AudioRecorderListener
 {
+
     private $container;
     private $arm;
 
@@ -59,18 +60,23 @@ class AudioRecorderListener
 
     /**
      * @DI\Observe("create_innova_audio_recorder")
-     * Main problem here is that ResourceController handle errors by refering to the form
-     * But File form is not adapted to our case...
      * @param CreateResourceEvent $event
      */
     public function onCreate(CreateResourceEvent $event)
     {
         $request = $this->container->get('request');
-        $formData = $request->request->all();        
+        $formData = $request->request->all();
         $blob = $request->files->get('file');
-        
+
         $workspace = $event->getParent()->getWorkspace();
-        $file = $this->arm->uploadFileAndCreateResource($formData, $blob, $workspace);
+        $result = $this->arm->uploadFileAndCreateResource($formData, $blob, $workspace);
+
+        if (!is_null($result['errors']) && count($result['errors']) > 0) {
+            $msg = $result['errors'][0];
+            $event->setErrorFormContent($msg);            
+        }
+        $file = $result['file'];
+
         $event->setPublished(true);
         $event->setResourceType('file');
         $event->setResources(array($file));
@@ -86,26 +92,26 @@ class AudioRecorderListener
     {
         // Create form POPUP
         $content = $this->container->get('templating')->render(
-          'InnovaAudioRecorderBundle:AudioRecorder:form.html.twig', array('resourceType' => 'innova_audio_recorder')
+                'InnovaAudioRecorderBundle:AudioRecorder:form.html.twig', array('resourceType' => 'innova_audio_recorder')
         );
         $event->setResponseContent($content);
         $event->stopPropagation();
     }
-    
-     /**
+
+    /**
      * @DI\Observe("delete_innova_audio_recorder")
      *
      * @param DeleteResourceEvent $event
      */
     public function onDelete(DeleteResourceEvent $event)
     {
-       /* $workspaceCode = $event->getResource()
-            ->getResourceNode()
-            ->getWorkspace()
-            ->getCode();*/
-        $pathName = $this->container->getParameter('claroline.param.files_directory').
-            DIRECTORY_SEPARATOR.
-            $event->getResource()->getHashName();
+        /* $workspaceCode = $event->getResource()
+          ->getResourceNode()
+          ->getWorkspace()
+          ->getCode(); */
+        $pathName = $this->container->getParameter('claroline.param.files_directory') .
+                DIRECTORY_SEPARATOR .
+                $event->getResource()->getHashName();
 
         if (file_exists($pathName)) {
             $event->setFiles(array($pathName));
@@ -113,7 +119,7 @@ class AudioRecorderListener
 
         $event->stopPropagation();
     }
-    
+
     /**
      * @DI\Observe("copy_innova_audio_recorder")
      *
@@ -125,8 +131,8 @@ class AudioRecorderListener
         $event->setCopy($newFile);
         $event->stopPropagation();
     }
-    
-     /**
+
+    /**
      * Copies a file (no persistence).
      *
      * @param File $resource
@@ -141,16 +147,16 @@ class AudioRecorderListener
         $newFile->setSize($resource->getSize());
         $newFile->setName($resource->getName());
         $newFile->setMimeType($resource->getMimeType());
-        $hashName = 'WORKSPACE_'.$workspace->getId().
-            $ds.
-            $this->container->get('claroline.utilities.misc')->generateGuid().
-            '.'.
-            pathinfo($resource->getHashName(), PATHINFO_EXTENSION);
+        $hashName = 'WORKSPACE_' . $workspace->getId() .
+                $ds .
+                $this->container->get('claroline.utilities.misc')->generateGuid() .
+                '.' .
+                pathinfo($resource->getHashName(), PATHINFO_EXTENSION);
         $newFile->setHashName($hashName);
-        $fileDir =  $this->container->getParameter('claroline.param.files_directory');
-        $filePath = $fileDir.$ds.$resource->getHashName();
-        $newPath = $fileDir.$ds.$hashName;
-        $workspaceDir = $fileDir.$ds.'WORKSPACE_'.$workspace->getId();
+        $fileDir = $this->container->getParameter('claroline.param.files_directory');
+        $filePath = $fileDir . $ds . $resource->getHashName();
+        $newPath = $fileDir . $ds . $hashName;
+        $workspaceDir = $fileDir . $ds . 'WORKSPACE_' . $workspace->getId();
 
         if (!is_dir($workspaceDir)) {
             mkdir($workspaceDir);
@@ -167,11 +173,12 @@ class AudioRecorderListener
      */
     public function onDownload(DownloadResourceEvent $event)
     {
-        
+
         $event->setItem(
-            $this->container
-                ->getParameter('claroline.param.files_directory').DIRECTORY_SEPARATOR.$event->getResource()->getHashName()
+                $this->container
+                        ->getParameter('claroline.param.files_directory') . DIRECTORY_SEPARATOR . $event->getResource()->getHashName()
         );
         $event->stopPropagation();
     }
+
 }
