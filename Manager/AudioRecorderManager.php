@@ -47,7 +47,7 @@ class AudioRecorderManager
         $this->tokenStorage = $container->get('security.token_storage');
         $this->claroUtils = $container->get('claroline.utilities.misc');
         $this->workspaceManager = $container->get('claroline.manager.workspace_manager');
-    }   
+    }
 
     /**
      * Handle web rtc blob file upload, conversion and Claroline File resource creation
@@ -56,9 +56,8 @@ class AudioRecorderManager
      * @param Workspace $workspace
      * @return File
      */
-    public function uploadFileAndCreateREsource($postData, UploadedFile $blob, Workspace $workspace = null)
+    public function uploadFileAndCreateResource($postData, UploadedFile $blob, Workspace $workspace = null)
     {
-        
         $errors = array();
         // final file upload dir
         $targetDir = '';
@@ -73,69 +72,55 @@ class AudioRecorderManager
           $fs->mkdir($targetDir);
         }
 
-        $doEncode = isset($postData['convert']) && $postData['convert'] == true;
-        $isFirefox = $postData['nav'] === 'firefox';
+        $isFirefox = isset($postData['nav']) && $postData['nav'] === 'firefox';
         $extension = $isFirefox ? 'ogg' : 'wav';
         $encodingExt = 'mp3';
-        $mimeType = $doEncode ? 'audio/' . $encodingExt : 'audio/' . $extension;
+        $mimeType = 'audio/' . $encodingExt;
 
         if (!$this->validateParams($postData, $blob)) {
             array_push($errors, 'one or more request parameters are missing.');
             return array('file' => null, 'errors' => $errors);
         }
-        
-        // the filename that will be in database (a human readable one should be better)
-        //$fileBaseName = $this->claroUtils->generateGuid();
+
         $fileBaseName = $postData['fileName'];
         $uniqueBaseName = $this->claroUtils->generateGuid();
-        $fileName = $uniqueBaseName . '.' . $extension;
-        
+        $hashName = $this->getBaseFileHashName($uniqueBaseName, $workspace) . '.' . $encodingExt;
 
-        $baseHashName = $this->getBaseFileHashName($uniqueBaseName, $workspace);
-        $hashName = $doEncode ? $baseHashName . '.mp3' : $baseHashName . '.' . $extension;
-        // file size @ToBe overriden if doEncode = true
-        $size = $blob->getSize();
+        $tempAudioFileName = $fileBaseName . '.' . $extension;
+        $finalFileName = $uniqueBaseName . '.' . $encodingExt;
 
-        if ($doEncode) {
-            // the filename after encoding
-            $encodedName = $uniqueBaseName . '.' . $encodingExt;
-            // upload original file in temp upload (ie web/uploads) dir
-            $blob->move($this->tempUploadDir, $fileName);
+        // upload original file in temp upload (ie web/uploads) dir
+        $blob->move($this->tempUploadDir, $tempAudioFileName);
 
-            // encode original file to mp3
-            $cmd = 'avconv -i ' . $this->tempUploadDir . DIRECTORY_SEPARATOR . $fileName . ' -acodec libmp3lame -ab 128k ' . $this->tempUploadDir . DIRECTORY_SEPARATOR . $encodedName;
-            $output;
-            $returnVar;
-            exec($cmd, $output, $returnVar);
+        $sourceFilePath =  $this->tempUploadDir . DIRECTORY_SEPARATOR . $tempAudioFileName;
+        $tempEncodedFilePath = $this->tempUploadDir . DIRECTORY_SEPARATOR . $finalFileName;
 
-            // cmd error
-            if ($returnVar !== 0) {
-                array_push($errors, 'File conversion failed with command ' . $cmd . ' and returned ' . $returnVar);
-                return array('file' => null, 'errors' => $errors);
-            }
+        // encode original file (ogg/wav) to mp3
+        $cmd = 'avconv -i ' . $sourceFilePath . ' -acodec libmp3lame -ab 128k ' . $tempEncodedFilePath;
+        exec($cmd, $output, $returnVar);
 
-            // copy the encoded file to user workspace directory
-            $fs->copy($this->tempUploadDir . DIRECTORY_SEPARATOR . $encodedName, $targetDir . DIRECTORY_SEPARATOR . $encodedName);
-            // get encoded file size...
-            $sFile = new sFile($targetDir . DIRECTORY_SEPARATOR . $encodedName);
-            $size = $sFile->getSize();
-            // remove temp encoded file
-            @unlink($this->tempUploadDir . DIRECTORY_SEPARATOR . $encodedName);
-            // remove original non encoded file from temp dir
-            @unlink($this->tempUploadDir . DIRECTORY_SEPARATOR . $fileName);
-            
-        } else {
-            $blob->move($targetDir, $fileName);
+        // cmd error
+        if ($returnVar !== 0) {
+            array_push($errors, 'File conversion failed with command ' . $cmd . ' and returned ' . $returnVar);
+            return array('file' => null, 'errors' => $errors);
         }
+
+        // copy the encoded file to user workspace directory
+        $fs->copy($tempEncodedFilePath, $targetDir . DIRECTORY_SEPARATOR . $finalFileName);
+        // get encoded file size...
+        $sFile = new sFile($targetDir . DIRECTORY_SEPARATOR . $finalFileName);
+        $size = $sFile->getSize();
+        // remove temp encoded file
+        @unlink($tempEncodedFilePath);
+        // remove original non encoded file from temp dir
+        @unlink($sourceFilePath);
 
         $file = new File();
         $file->setSize($size);
-        //$name = $doEncode ? $fileBaseName.'.'.$encodingExt:$fileBaseName.'.'.$extension;
         $file->setName($fileBaseName);
         $file->setHashName($hashName);
         $file->setMimeType($mimeType);
 
-        //return $file;
         return array('file' => $file, 'errors' => []);
     }
 
@@ -160,8 +145,8 @@ class AudioRecorderManager
         $availableNavs = ["firefox", "chrome"];
         if (!array_key_exists('nav', $postData) || $postData['nav'] === '' || !in_array($postData['nav'], $availableNavs)) {
             return false;
-        }       
-        
+        }
+
         if(!array_key_exists('fileName', $postData) || !isset($postData['fileName']) || $postData['fileName'] === ''){
             return false;
         }

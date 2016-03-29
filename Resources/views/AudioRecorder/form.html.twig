@@ -25,7 +25,7 @@
                             <hr/>
                             <span id="form-error-msg">{{ 'resource_creation_error_download'|trans({}, 'innova_audio_recorder') }}</span>
                             <hr/>
-                            <button type="button" title="{{ 'download_audio'|trans({}, 'innova_audio_recorder') }}" role="button" class="btn btn-danger fa fa-download" id="btn-audio-download" onclick="downloadAudio()" style="display: none;"></button>
+                            <button type="button" title="{{ 'download_audio'|trans({}, 'innova_audio_recorder') }}" role="button" class="btn btn-danger fa fa-download" id="btn-audio-download" style="display: none;"></button>
                         </div>
                     </div>
                 </div>
@@ -33,8 +33,8 @@
                     <div id="audioRecorderRow" class="row">
                         <div class="col-md-12 text-center">
                             <div class="btn-group">
-                                <button type="button" role="button" class="btn btn-danger fa fa-circle" id="audio-record-start" title="Commencer l'enregistrement" onclick="recordAudio()"></button>
-                                <button type="button" role="button" class="btn btn-default fa fa-stop" id="audio-record-stop" title="Arrêter l'enregistrement" disabled="disabled" onclick="stopRecordingAudio()"></button>
+                                <button type="button" role="button" class="btn btn-danger fa fa-circle" id="audio-record-start" title="{{ 'start_recording'|trans({}, 'innova_audio_recorder') }}"></button>
+                                <button type="button" role="button" class="btn btn-default fa fa-stop" id="audio-record-stop" title="{{ 'start_recording'|trans({}, 'innova_audio_recorder') }}" disabled="disabled"></button>
 
                             </div>
                             <canvas class="pull-right" id="analyser" title="Mic level" width="34px" height="25px"></canvas>
@@ -72,22 +72,14 @@
             <div class="modal-footer">
                 <div id="progress"></div>
                 <button type="button" role="button" class="btn btn-default" data-dismiss="modal">{{ 'cancel'|trans({}, 'platform') }}</button>
-                <button type="button" role="button" onclick="uploadAudio()" id="submitButton" disabled="disabled" class="btn btn-primary">{{ 'ok'|trans({}, 'platform') }}</button>
+                <button type="button" role="button" id="submitButton" disabled="disabled" class="btn btn-primary">{{ 'ok'|trans({}, 'platform') }}</button>
             </div>
         </div>
     </form>
 </div>
 
+
 {% block javascripts %}
-
     <script type="text/javascript" src="{{ url('bazinga_jstranslation_js', { 'domain':'innova_audio_recorder' }) }}"></script>
-
-    {% javascripts debug=false filter='jsmin' output='vendor/innova/audio-recorder/js/innova-audio-recorder.js'
-  '@InnovaAudioRecorderBundle/Resources/public/js/libs/*'
-  '@InnovaAudioRecorderBundle/Resources/public/js/audio_recorder.js'
-    %}
-
-    <script src="{{ asset_url }}"></script>
-    {% endjavascripts %}
-
+    <script src="{{ hotAsset('dist/innova-audio-recorder-recorder.js') }}"></script>
 {% endblock %}
