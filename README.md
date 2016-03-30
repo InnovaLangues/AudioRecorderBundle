@@ -32,6 +32,13 @@ Some versions of Firefox / Linux could not read encoded mp3 but it works well wi
 * Eric Vincent (ericvincenterv)
 * Nicolas Dufour (eldoniel)
 * Patrick Guillou (pitrackster)
+* 
+
+## Requests
+
+Go to [Claroline](https://github.com/claroline/Claroline/issues) if you want to ask for new features.
+
+Go to [Claroline Support](https://github.com/claroline/ClaroSupport/issues) if you encounter some bugs.
 
 ## Licence
 
