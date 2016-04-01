@@ -1,4 +1,0 @@
-# Parameters
-parameters:
-    # Listeners
-    innova_audio_recorder.listener.audio_recorder.class:    Innova\AudioRecorderBundle\EventListener\Resource\AudioRecorderListener

@@ -183,15 +183,16 @@ function recordStream() {
 
   recorder.ondataavailable = handleDataAvailable;
   recorder.start(10); // collect 10ms of data
-
-  intervalID = window.setInterval(function(){
-    currentTime -= 1;
-    $('.timer').text(' - ' + currentTime.toString() + 's');
-    if(currentTime === 0){
-      window.clearInterval(intervalID);
-      stopRecording();
-    }
-  }, 1000);
+  if(maxTime > 0){    
+    intervalID = window.setInterval(function(){
+      currentTime -= 1;
+      $('.timer').text(' - ' + currentTime.toString() + 's');
+      if(currentTime === 0){
+        window.clearInterval(intervalID);
+        stopRecording();
+      }
+    }, 1000);
+  }
 
   nbTry++;
   if (maxTry > 0) {

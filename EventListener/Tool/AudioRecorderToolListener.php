@@ -2,16 +2,12 @@
 
 namespace Innova\AudioRecorderBundle\EventListener\Tool;
 
-
 use JMS\DiExtraBundle\Annotation as DI;
 use Innova\AudioRecorderBundle\Manager\AudioRecorderManager;
 use Symfony\Bridge\Twig\TwigEngine;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Claroline\CoreBundle\Event\DisplayToolEvent;
-use Doctrine\ORM\EntityManager;
-use Claroline\CoreBundle\Entity\Workspace\Workspace;
 use Innova\AudioRecorderBundle\Form\Type\AudioRecorderConfigurationType;
-use Innova\AudioRecorderBundle\Entity\AudioRecorderConfiguration;
 
 /**
  *  @DI\Service()
@@ -20,19 +16,19 @@ class AudioRecorderToolListener
 {
   private $templating;
   private $container;
-  private $em;
+  private $arm;
 
   /**
    * @DI\InjectParams({
-   *      "em"                = @DI\Inject("doctrine.orm.entity_manager"),
+   *      "arm"               = @DI\Inject("innova.audio_recorder.manager"),
    *      "templating"        = @DI\Inject("templating"),
    *      "container"         = @DI\Inject("service_container")
    * })
    */
-  public function __construct(EntityManager $em, TwigEngine $templating, ContainerInterface $container)
+  public function __construct(AudioRecorderManager $arm, TwigEngine $templating, ContainerInterface $container)
   {
+      $this->arm = $arm;
       $this->templating = $templating;
-      $this->em = $em;
       $this->container = $container;
   }
 
@@ -43,8 +39,7 @@ class AudioRecorderToolListener
    */
   public function onDesktopOpen(DisplayToolEvent $event)
   {
-
-      $config = $this->em->getRepository('InnovaAudioRecorderBundle:AudioRecorderConfiguration')->findAll()[0];
+      $config = $this->arm->getConfig();
       $form = $this->container->get('form.factory')->create(new AudioRecorderConfigurationType(), $config);
       $content = $this->templating->render(
           'InnovaAudioRecorderBundle::desktopTool.html.twig',
@@ -53,5 +48,4 @@ class AudioRecorderToolListener
       $event->setContent($content);
       $event->stopPropagation();
   }
-
 }
