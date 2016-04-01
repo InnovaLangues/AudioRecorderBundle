@@ -14,7 +14,8 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                <h4 class="modal-title">Audio Recorder</h4>
+                <h4 class="modal-title">{{ 'innova_audio_recorder'|trans({}, 'resource') }}<span class="nb-try"></span><span class="timer"></span></h4>
+
             </div>
             <div class="modal-body">
                 <div class="row" id="form-error-msg-row" style="display: none;">
@@ -47,7 +48,6 @@
                                 <label for="resource-name-input">{{ 'resource_name'|trans({}, 'innova_audio_recorder') }}</label>
                                 <input required="required" id="resource-name-input" type="text" value="recorded-audio-{{"now"|date("YmdHs")}}" class="form-control" name="resourceName" placeholder="">
                             </div>
-
                         </div>
                     </div>
                     <hr/>
@@ -76,6 +76,8 @@
             </div>
         </div>
     </form>
+    <input type="hidden" id="maxTime" value="{{maxTime}}">
+    <input type="hidden" id="maxTry" value="{{maxTry}}">
 </div>
 
 

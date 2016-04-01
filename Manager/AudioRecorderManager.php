@@ -11,6 +11,7 @@ use Claroline\CoreBundle\Entity\Resource\File;
 use Symfony\Component\HttpFoundation\File\File as sFile;
 use Symfony\Component\Filesystem\Filesystem;
 use Claroline\CoreBundle\Entity\Workspace\Workspace;
+use Innova\AudioRecorderBundle\Entity\AudioRecorderConfiguration;
 
 /**
  * @DI\Service("innova.audio_recorder.manager")
@@ -155,6 +156,21 @@ class AudioRecorderManager
             return false;
         }
         return true;
+    }
+
+    public function updateConfiguration(AudioRecorderConfiguration $config, $postData)
+    {
+      $om = $this->container->get('claroline.persistence.object_manager');
+      $config->setMaxTry($postData['max_try']);
+      $config->setMaxRecordingTime($postData['max_recording_time']);
+      $om->persist($config);
+      $om->flush();
+    }
+
+    public function getConfig()
+    {
+      $config = $this->container->get('doctrine.orm.entity_manager')->getRepository('InnovaAudioRecorderBundle:AudioRecorderConfiguration')->findAll()[0];
+      return $config;
     }
 
 }

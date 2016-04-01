@@ -51,7 +51,7 @@ class AudioRecorderListener
                 ->get('router')
                 ->generate('claro_resource_open', array(
             'node' => $resource->getResourceNode()->getId(),
-            'resourceType' => 'file',
+            'resourceType' => 'file'
                 )
         );
         $event->setResponse(new RedirectResponse($route));
@@ -73,7 +73,7 @@ class AudioRecorderListener
 
         if (!is_null($result['errors']) && count($result['errors']) > 0) {
             $msg = $result['errors'][0];
-            $event->setErrorFormContent($msg);            
+            $event->setErrorFormContent($msg);
         }
         $file = $result['file'];
 
@@ -90,9 +90,16 @@ class AudioRecorderListener
      */
     public function onCreateForm(CreateFormResourceEvent $event)
     {
+
+        $config = $this->arm->getConfig();
         // Create form POPUP
         $content = $this->container->get('templating')->render(
-                'InnovaAudioRecorderBundle:AudioRecorder:form.html.twig', array('resourceType' => 'innova_audio_recorder')
+                'InnovaAudioRecorderBundle:AudioRecorder:form.html.twig',
+                array(
+                  'resourceType' => 'innova_audio_recorder',
+                  'maxTry' => $config->getMaxTry(),
+                  'maxTime' => $config->getMaxRecordingTime()
+                )
         );
         $event->setResponseContent($content);
         $event->stopPropagation();

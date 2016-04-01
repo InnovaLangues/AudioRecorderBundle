@@ -7,6 +7,9 @@ download_audio: Download audio file
 # m
 my_recordings: My recordings
 
+# n
+nb_try_label: Try n°
+
 # r
 resource_name: Choose a name for the resource that will be generated (or leave the default one)
 resource_name_placeholder: The resource name is mandatory.

@@ -5,21 +5,17 @@ import * as VolumeMeter from './libs/volume-meter';
 const isFirefox = !!navigator.mediaDevices.getUserMedia;
 
 const isDebug = true;
-if(isDebug){
-  console.log(isFirefox ? 'firefox':'chrome');
+if (isDebug) {
+  console.log(isFirefox ? 'firefox' : 'chrome');
 }
 
 let recorder;
 let tempRecordedBlobs; // array of chunked audio blobs
 
-
-
-var audioRecorder; // WebRtc object
-
 let audioContext = new window.AudioContext();
 let audioInput = null,
-        realAudioInput = null,
-        inputPoint = null;
+  realAudioInput = null,
+  inputPoint = null;
 let rafID = null;
 let analyserContext = null;
 let analyserNode = null;
@@ -30,9 +26,15 @@ let meter;
 let aid = 0; // audio array current recording index
 var aRecorders = []; // collection of recorders - no more used
 let aBlobs = []; // collection of audio blobs
-var audios = []; // collection of audio objects for playing recorded audios
-var aStream; // current recorder stream
+let audios = []; // collection of audio objects for playing recorded audios
 
+let maxTry;
+let maxTime;
+let nbTry = 0;
+let nbTryLabelBase = ' - ' + Translator.trans('nb_try_label', {}, 'innova_audio_recorder');
+let nbTryLabel = '';
+let currentTime = 0;
+let intervalID;
 // avoid the recorded file to be chunked by setting a slight timeout
 const recordEndTimeOut = 512;
 
@@ -40,51 +42,66 @@ const constraints = {
   audio: true
 };
 
-// store stream chunks
+// store stream chunks every 10 ms
 function handleDataAvailable(event) {
   if (event.data && event.data.size > 0) {
     tempRecordedBlobs.push(event.data);
   }
 }
 
-$('.modal').on('shown.bs.modal', function () {
-    console.log('modal shown');
-    // file name check and change
-    $("#resource-name-input").on("change paste keyup", function () {
-        if ($(this).val() === '') { // name is blank
-            $(this).attr('placeholder', 'provide a name for the resource');
-            $('#submitButton').prop('disabled', true);
-        } else if ($('input:checked').length > 0) { // name is set and a recording is selected
-            $('#submitButton').prop('disabled', false);
-        }
-        // remove blanks
-        $(this).val(function (i, val) {
-            return val.replace(' ', '_');
-        });
+$('.modal').on('shown.bs.modal', function() {
+  console.log('modal shown');
+  // file name check and change
+  $("#resource-name-input").on("change paste keyup", function() {
+    if ($(this).val() === '') { // name is blank
+      $(this).attr('placeholder', 'provide a name for the resource');
+      $('#submitButton').prop('disabled', true);
+    } else if ($('input:checked').length > 0) { // name is set and a recording is selected
+      $('#submitButton').prop('disabled', false);
+    }
+    // remove blanks
+    $(this).val(function(i, val) {
+      return val.replace(' ', '_');
     });
+  });
 
-    $('#audio-record-start').on('click', recordStream);
-    $('#audio-record-stop').on('click', stopRecording);
-    $('#btn-audio-download').on('click', download);
-    $('#submitButton').on('click', uploadAudio);
+  $('#audio-record-start').on('click', recordStream);
+  $('#audio-record-stop').on('click', stopRecording);
+  $('#btn-audio-download').on('click', download);
+  $('#submitButton').on('click', uploadAudio);
+
+  maxTry = parseInt($('#maxTry').val());
+  maxTime = parseInt($('#maxTime').val());
+
+  currentTime = maxTime;
+
+  if (maxTry > 0) {
+    nbTryLabel = nbTryLabelBase + ' ' + nbTry.toString() + '/' + maxTry.toString();
+    $('.nb-try').text(nbTryLabel);
+  }
+
+  if(maxTime > 0){
+    $('.timer').text(' - ' + (maxTime).toString() + 's');
+  }
+
 });
 
-$('body').on('click', '.play', function(){
+$('body').on('click', '.play', function() {
   playAudio(this);
 });
-$('body').on('click', '.stop', function(){
+$('body').on('click', '.stop', function() {
   stopAudio(this);
 });
-$('body').on('click', '.delete', function(){
+$('body').on('click', '.delete', function() {
   deleteAudio(this);
 });
-$('body').on('click', 'input[name="audio-selected"]', function(){
+$('body').on('click', 'input[name="audio-selected"]', function() {
   audioSelected(this);
 });
 
-$('.modal').on('hide.bs.modal', function () {
-    console.log('modal closed');
-    resetData();
+$('.modal').on('hide.bs.modal', function() {
+  console.log('modal closed');
+  resetData();
 });
 
 // getUserMedia() polyfill
@@ -93,12 +110,12 @@ const promisifiedOldGUM = function(constraints, successCallback, errorCallback) 
 
   // First get ahold of getUserMedia, if present
   let getUserMedia = (navigator.getUserMedia ||
-      navigator.webkitGetUserMedia ||
-      navigator.mozGetUserMedia);
+    navigator.webkitGetUserMedia ||
+    navigator.mozGetUserMedia);
 
   // Some browsers just don't implement it - return a rejected promise with an error
   // to keep a consistent interface
-  if(!getUserMedia) {
+  if (!getUserMedia) {
     return Promise.reject(new Error('getUserMedia is not implemented in this browser'));
   }
 
@@ -110,7 +127,7 @@ const promisifiedOldGUM = function(constraints, successCallback, errorCallback) 
 }
 
 // Older browsers might not implement mediaDevices at all, so we set an empty object first
-if(navigator.mediaDevices === undefined) {
+if (navigator.mediaDevices === undefined) {
   navigator.mediaDevices = {};
 }
 
@@ -118,19 +135,19 @@ if(navigator.mediaDevices === undefined) {
 // Some browsers partially implement mediaDevices. We can't just assign an object
 // with getUserMedia as it would overwrite existing properties.
 // Here, we will just add the getUserMedia property if it's missing.
-if(navigator.mediaDevices.getUserMedia === undefined) {
+if (navigator.mediaDevices.getUserMedia === undefined) {
   navigator.mediaDevices.getUserMedia = promisifiedOldGUM;
 }
 
 navigator.mediaDevices.getUserMedia(constraints)
-.then(
-  gumSuccess
-).catch(
-  gumError
-);
+  .then(
+    gumSuccess
+  ).catch(
+    gumError
+  );
 
 // getUserMedia Success Callback
-function gumSuccess(stream){
+function gumSuccess(stream) {
   if (isDebug) {
     console.log('success');
     console.log('getUserMedia() got stream: ', stream);
@@ -141,7 +158,7 @@ function gumSuccess(stream){
 }
 
 // getUserMedia Error Callback
-function gumError(error){
+function gumError(error) {
   const msg = 'navigator.getUserMedia error.';
   showError(msg, false);
   if (isDebug) {
@@ -166,6 +183,22 @@ function recordStream() {
 
   recorder.ondataavailable = handleDataAvailable;
   recorder.start(10); // collect 10ms of data
+
+  intervalID = window.setInterval(function(){
+    currentTime -= 1;
+    $('.timer').text(' - ' + currentTime.toString() + 's');
+    if(currentTime === 0){
+      window.clearInterval(intervalID);
+      stopRecording();
+    }
+  }, 1000);
+
+  nbTry++;
+  if (maxTry > 0) {
+    nbTryLabel = nbTryLabelBase + ' ' + nbTry.toString() + '/' + maxTry.toString();
+    $('.nb-try').text(nbTryLabel);
+  }
+
   if (isDebug) {
     console.log('MediaRecorder started', recorder);
   }
@@ -173,47 +206,52 @@ function recordStream() {
 
 function stopRecording() {
 
+  if (maxTry === 0 || nbTry < maxTry) {
     $('#audio-record-start').prop('disabled', '');
+  }
+
+  if(maxTime > 0){
+    $('.timer').text(' - ' + maxTime.toString() + 's');
+  }
+
+  window.clearInterval(intervalID);
+
+  // avoid recorded audio truncated end by setting a timeout
+  window.setTimeout(function() {
+
+    recorder.stop();
     $('#audio-record-stop').prop('disabled', 'disabled');
 
-    // avoid recorded audio truncated end by setting a timeout
-    window.setTimeout(function () {
+    if (isDebug) {
+      console.log(tempRecordedBlobs);
+    }
+    let options = isFirefox ? 'audio/ogg; codecs=opus' : 'audio/wav';
 
-        recorder.stop();
+    let superBuffer = new Blob(tempRecordedBlobs, {
+      'type': options
+    });
 
-        $('#video-record-start').prop('disabled', '');
-        $('#video-record-stop').prop('disabled', 'disabled');
+    let audioObject = new Audio();
+    audioObject.src = window.URL ? window.URL.createObjectURL(superBuffer) : superBuffer;
+    audios.push(audioObject);
+    aBlobs.push(superBuffer);
 
-        if (isDebug) {
-          console.log(tempRecordedBlobs);
-        }
-        let options = isFirefox ? 'audio/ogg; codecs=opus':'audio/wav';
-
-        let superBuffer = new Blob(tempRecordedBlobs, {
-           'type' : options
-        });
-
-        let audioObject = new Audio();
-        audioObject.src = window.URL ? window.URL.createObjectURL(superBuffer) : superBuffer;
-        audios.push(audioObject);
-        aBlobs.push(superBuffer);
-
-        let html = '<div class="row recorded-audio-row" id="recorded-audio-row-' + aid.toString() + '" data-index="' + aid + '">';
-        html += '       <div class="col-md-8">';
-        html += '         <div class="btn-group">';
-        html += '           <button type="button" role="button" class="btn btn-default fa fa-play play"></button>';
-        html += '           <button type="button" role="button" class="btn btn-default fa fa-stop stop"></button>';
-        html += '           <button type="button" role="button" class="btn btn-danger fa fa-trash delete"></button>';
-        html += '         </div>';
-        html += '       </div>';
-        html += '       <div class="col-md-4">';
-        html += '         <input type="radio" name="audio-selected" class="select">';
-        html += '       </div>';
-        html += '       <hr/>';
-        html += '   </div>';
-        $('#audio-records-container').append(html);
-        aid++;
-    }, recordEndTimeOut);
+    let html = '<div class="row recorded-audio-row" id="recorded-audio-row-' + aid.toString() + '" data-index="' + aid + '">';
+    html += '       <div class="col-md-8">';
+    html += '         <div class="btn-group">';
+    html += '           <button type="button" role="button" class="btn btn-default fa fa-play play"></button>';
+    html += '           <button type="button" role="button" class="btn btn-default fa fa-stop stop"></button>';
+    html += '           <button type="button" role="button" class="btn btn-danger fa fa-trash delete"></button>';
+    html += '         </div>';
+    html += '       </div>';
+    html += '       <div class="col-md-4">';
+    html += '         <input type="radio" name="audio-selected" class="select">';
+    html += '       </div>';
+    html += '       <hr/>';
+    html += '   </div>';
+    $('#audio-records-container').append(html);
+    aid++;
+  }, recordEndTimeOut);
 }
 
 function showError(msg, canDownload = false) {
@@ -231,7 +269,7 @@ function showError(msg, canDownload = false) {
 }
 
 function audioSelected(elem) {
-    $('#submitButton').prop('disabled', false);
+  $('#submitButton').prop('disabled', false);
 }
 
 function resetData() {
@@ -258,105 +296,113 @@ function resetData() {
 }
 
 function playAudio(elem) {
-    const index = $(elem).closest('.recorded-audio-row').attr('data-index');
-    audios[index].play();
+  const index = $(elem).closest('.recorded-audio-row').attr('data-index');
+  audios[index].play();
 }
 
 function stopAudio(elem) {
-    const index = $(elem).closest('.recorded-audio-row').attr('data-index');
-    audios[index].pause();
-    audios[index].currentTime = 0;
+  const index = $(elem).closest('.recorded-audio-row').attr('data-index');
+  audios[index].pause();
+  audios[index].currentTime = 0;
 }
 
 function deleteAudio(elem) {
-    const index = $(elem).closest('.recorded-audio-row').attr('data-index');
-    audios.splice(index, 1);
-    aBlobs.splice(index, 1);
+  const index = $(elem).closest('.recorded-audio-row').attr('data-index');
+  audios.splice(index, 1);
+  aBlobs.splice(index, 1);
 
-    $('#recorded-audio-row-' + index.toString()).remove();
-    const noAudioSelected = $('input:checked').length === 0;
-    if (audios.length === 0 || noAudioSelected) {
-        $('#submitButton').prop('disabled', true);
+  $('#recorded-audio-row-' + index.toString()).remove();
+  const noAudioSelected = $('input:checked').length === 0;
+  if (audios.length === 0 || noAudioSelected) {
+    $('#submitButton').prop('disabled', true);
+  }
+
+  // rebuilt all row id(s) and index
+  $('.recorded-audio-row').each(function(i) {
+    $(this).attr('id', 'recorded-audio-row-' + i.toString());
+    $(this).attr('data-index', i);
+  });
+
+  aid = audios.length;
+
+  nbTry--;
+  if (maxTry > 0) {
+    nbTryLabel = nbTryLabelBase + ' ' + nbTry.toString() + '/' + maxTry.toString();
+    $('.nb-try').text(nbTryLabel);
+    if (nbTry < maxTry) {
+      $('#audio-record-start').prop('disabled', '');
     }
-
-    // rebuilt all row id(s) and index
-    $('.recorded-audio-row').each(function (i) {
-        console.log('rebuilt row data-indexes '  + i.toString());
-        $(this).attr('id', 'recorded-audio-row-' + i.toString());
-        $(this).attr('data-index', i);
-    });
-
-    aid = audios.length;
+  }
 }
 
 
 // use with claro new Resource API
 function uploadAudio() {
-    // get selected audio index
-    let index = -1;
-    index = $('input:checked').closest('.recorded-audio-row').attr('data-index');
-    if (index > -1) {
-        let blob = aBlobs[index];
-        let formData = new FormData();
-        // nav should be mandatory
-        if (isFirefox) {
-            formData.append('nav', 'firefox');
-        } else {
-            formData.append('nav', 'chrome');
-        }
-        // convert is optionnal
-        formData.append('convert', true);
-        // file is mandatory
-        formData.append('file', blob);
-        // filename is mandatory
-        let fileName = $("#resource-name-input").val();
-        formData.append('fileName', fileName);
-
-        let route = $('#arForm').attr('action');
-        xhr(route, formData, null, function (fileURL) {});
+  // get selected audio index
+  let index = -1;
+  index = $('input:checked').closest('.recorded-audio-row').attr('data-index');
+  if (index > -1) {
+    let blob = aBlobs[index];
+    let formData = new FormData();
+    // nav should be mandatory
+    if (isFirefox) {
+      formData.append('nav', 'firefox');
+    } else {
+      formData.append('nav', 'chrome');
     }
+    // convert is optionnal
+    formData.append('convert', true);
+    // file is mandatory
+    formData.append('file', blob);
+    // filename is mandatory
+    let fileName = $("#resource-name-input").val();
+    formData.append('fileName', fileName);
+
+    let route = $('#arForm').attr('action');
+    xhr(route, formData, null, function(fileURL) {});
+  }
 }
 
 function xhr(url, data, progress, callback) {
 
-    const message = Translator.trans('creating_resource', {}, 'innova_audio_recorder');
-    // tell the user that his action has been taken into account
-    $('#submitButton').text(message);
-    $('#submitButton').attr('disabled', true);
-    $('#submitButton').append('&nbsp;<i id="spinner" class="fa fa-spinner fa-spin"></i>');
+  const message = Translator.trans('creating_resource', {}, 'innova_audio_recorder');
+  // tell the user that his action has been taken into account
+  $('#submitButton').text(message);
+  $('#submitButton').attr('disabled', true);
+  $('#submitButton').append('&nbsp;<i id="spinner" class="fa fa-spinner fa-spin"></i>');
 
-    let request = new XMLHttpRequest();
-    request.onreadystatechange = function () {
-        if (request.readyState === 4 && request.status === 200) {
-            console.log('xhr end with success');
-            resetData();
+  let request = new XMLHttpRequest();
+  request.onreadystatechange = function() {
+    if (request.readyState === 4 && request.status === 200) {
+      if(isDebug) console.log('xhr end with success');
+      resetData();
 
-            // use reload or generate route...
-            location.reload();
+      // use reload or generate route...
+      location.reload();
 
-        } else if (request.status === 500) {
-            console.log('xhr error');
-            //var errorMessage = Translator.trans('resource_creation_error', {}, 'innova_audio_recorder');
-            //$('#form-error-msg').text(errorMessage);
-            $('#form-error-msg-row').show();
-            // allow user to save the recorded file on his device...
-            let index = -1;
-            index = $('input:checked').closest('.recorded-audio-row').attr('data-index');
-            if (index > -1) {
-                // show download button
-                $('#btn-audio-download').show();
-                $('#form-content').hide();
-                $('#submitButton').hide();
-            }
-        }
-    };
+    } else if (request.status === 500) {
+      if(isDebug) console.log('xhr error');
+      //var errorMessage = Translator.trans('resource_creation_error', {}, 'innova_audio_recorder');
+      //$('#form-error-msg').text(errorMessage);
+      $('#form-error-msg-row').show();
+      // allow user to save the recorded file on his device...
+      let index = -1;
+      index = $('input:checked').closest('.recorded-audio-row').attr('data-index');
+      if (index > -1) {
+        // show download button
+        $('#btn-audio-download').show();
+        $('#form-content').hide();
+        $('#submitButton').hide();
+      }
+    }
+  };
 
-    request.upload.onprogress = function (e) {
-        // if we want to use progress bar
-    };
+  request.upload.onprogress = function(e) {
+    // if we want to use progress bar
+  };
 
-    request.open('POST', url, true);
-    request.send(data);
+  request.open('POST', url, true);
+  request.send(data);
 
 }
 
@@ -378,50 +424,44 @@ function download() {
   }, 100);
 }
 
-/*function captureUserMedia(mediaConstraints, successCallback, errorCallback) {
-    // needs adapter.js to work in chrome
-    navigator.mediaDevices.getUserMedia(mediaConstraints).then(successCallback).catch(errorCallback);
-}*/
-
-
 function createVolumeMeter() {
-    inputPoint = audioContext.createGain();
-    // Create an AudioNode from the stream.
-    realAudioInput = audioContext.createMediaStreamSource(window.stream);
+  inputPoint = audioContext.createGain();
+  // Create an AudioNode from the stream.
+  realAudioInput = audioContext.createMediaStreamSource(window.stream);
 
-    meter = VolumeMeter.createAudioMeter(audioContext);
-    realAudioInput.connect(meter);
-    draw();
+  meter = VolumeMeter.createAudioMeter(audioContext);
+  realAudioInput.connect(meter);
+  draw();
 }
 
 function draw(time) {
 
-    if (!analyserContext) {
-        let canvas = document.getElementById("analyser");
-        canvasWidth = canvas.width;
-        canvasHeight = canvas.height;
-        analyserContext = canvas.getContext('2d');
-        gradient = analyserContext.createLinearGradient(0, 0, canvasWidth, 0);
-        gradient.addColorStop(0.15, '#ffff00'); // min level color
-        gradient.addColorStop(0.80, '#ff0000'); // max level color
-    }
+  if (!analyserContext) {
+    let canvas = document.getElementById("analyser");
+    canvasWidth = canvas.width;
+    canvasHeight = canvas.height;
+    analyserContext = canvas.getContext('2d');
+    gradient = analyserContext.createLinearGradient(0, 0, canvasWidth, 0);
+    gradient.addColorStop(0.15, '#ffff00'); // min level color
+    gradient.addColorStop(0.80, '#ff0000'); // max level color
+  }
 
-    // clear the background
-    analyserContext.clearRect(0, 0, canvasWidth, canvasHeight);
+  // clear the background
+  analyserContext.clearRect(0, 0, canvasWidth, canvasHeight);
 
-    analyserContext.fillStyle = gradient;
-    // draw a bar based on the current volume
-    analyserContext.fillRect(0, 0, meter.volume * canvasWidth * 1.4, canvasHeight);
+  analyserContext.fillStyle = gradient;
+  // draw a bar based on the current volume
+  analyserContext.fillRect(0, 0, meter.volume * canvasWidth * 1.4, canvasHeight);
 
-    // set up the next visual callback
-    rafID = window.requestAnimationFrame(draw);
+  // set up the next visual callback
+  rafID = window.requestAnimationFrame(draw);
 }
 
 function cancelAnalyserUpdates() {
-    window.cancelAnimationFrame(rafID);
-    // clear the current state
-    if (analyserContext) {
-        analyserContext.clearRect(0, 0, canvasWidth, canvasHeight);
-    }
-    rafID = null;
+  window.cancelAnimationFrame(rafID);
+  // clear the current state
+  if (analyserContext) {
+    analyserContext.clearRect(0, 0, canvasWidth, canvasHeight);
+  }
+  rafID = null;
 }

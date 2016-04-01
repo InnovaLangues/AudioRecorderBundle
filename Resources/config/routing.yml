@@ -1,4 +1,4 @@
 innova_audio_recorder:
     resource: "@InnovaAudioRecorderBundle/Controller/AudioRecorderController.php"
-    prefix: /api
-    type: rest
+    prefix: /
+    type: annotation
