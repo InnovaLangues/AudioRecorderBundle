@@ -4,7 +4,7 @@ import * as VolumeMeter from './libs/volume-meter';
 
 const isFirefox = !!navigator.mediaDevices.getUserMedia;
 
-const isDebug = true;
+const isDebug = false;
 if (isDebug) {
   console.log(isFirefox ? 'firefox' : 'chrome');
 }
@@ -24,7 +24,6 @@ let gradient;
 let meter;
 
 let aid = 0; // audio array current recording index
-var aRecorders = []; // collection of recorders - no more used
 let aBlobs = []; // collection of audio blobs
 let audios = []; // collection of audio objects for playing recorded audios
 
@@ -183,7 +182,7 @@ function recordStream() {
 
   recorder.ondataavailable = handleDataAvailable;
   recorder.start(10); // collect 10ms of data
-  if(maxTime > 0){    
+  if(maxTime > 0){
     intervalID = window.setInterval(function(){
       currentTime -= 1;
       $('.timer').text(' - ' + currentTime.toString() + 's');
@@ -212,7 +211,8 @@ function stopRecording() {
   }
 
   if(maxTime > 0){
-    $('.timer').text(' - ' + maxTime.toString() + 's');
+    currentTime = maxTime;
+    $('.timer').text(' - ' + currentTime.toString() + 's');
   }
 
   window.clearInterval(intervalID);
