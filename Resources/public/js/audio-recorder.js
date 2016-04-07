@@ -1,6 +1,7 @@
 "use strict";
 
-import * as VolumeMeter from './libs/volume-meter';
+import Meter from './libs/js-meter';
+var CircleProgress = require('./libs/circle-progress');
 
 const isFirefox = !!navigator.mediaDevices.getUserMedia;
 
@@ -12,15 +13,9 @@ if (isDebug) {
 let recorder;
 let tempRecordedBlobs; // array of chunked audio blobs
 
+// audio input volume visualisation
 let audioContext = new window.AudioContext();
-let audioInput = null,
-  realAudioInput = null,
-  inputPoint = null;
-let rafID = null;
-let analyserContext = null;
-let analyserNode = null;
-let canvasWidth, canvasHeight;
-let gradient;
+let realAudioInput = null;
 let meter;
 
 let aid = 0; // audio array current recording index
@@ -72,7 +67,15 @@ $('.modal').on('shown.bs.modal', function() {
   maxTry = parseInt($('#maxTry').val());
   maxTime = parseInt($('#maxTime').val());
 
-  currentTime = maxTime;
+  currentTime = 0;
+
+  $('.circle').circleProgress({
+    size: 30,
+    thickness: 5,
+    fill: { color: "#ff1e41" }
+  }).on('circle-animation-progress', function(event, progress){
+    //console.log(progress);
+  });
 
   if (maxTry > 0) {
     nbTryLabel = nbTryLabelBase + ' ' + nbTry.toString() + '/' + maxTry.toString();
@@ -182,11 +185,14 @@ function recordStream() {
 
   recorder.ondataavailable = handleDataAvailable;
   recorder.start(10); // collect 10ms of data
+
+  $('.fa-circle').addClass('blinking');
   if(maxTime > 0){
     intervalID = window.setInterval(function(){
-      currentTime -= 1;
-      $('.timer').text(' - ' + currentTime.toString() + 's');
-      if(currentTime === 0){
+      currentTime += 1;
+      let value = currentTime * 1 / maxTime;
+      $('.circle').circleProgress('value', value);
+      if(currentTime === maxTime){
         window.clearInterval(intervalID);
         stopRecording();
       }
@@ -281,19 +287,6 @@ function resetData() {
       track.stop();
     });
   }
-
-  audios = [];
-  aBlobs = [];
-  tempRecordedBlobs = null;
-  recorder = null;
-  audioContext = null;
-  audioInput = null;
-  realAudioInput = null;
-  inputPoint = null;
-  rafID = null;
-  analyserContext = null;
-  analyserNode = null;
-  aid = 0;
 }
 
 function playAudio(elem) {
@@ -426,43 +419,12 @@ function download() {
 }
 
 function createVolumeMeter() {
-  inputPoint = audioContext.createGain();
   // Create an AudioNode from the stream.
   realAudioInput = audioContext.createMediaStreamSource(window.stream);
-
-  meter = VolumeMeter.createAudioMeter(audioContext);
-  realAudioInput.connect(meter);
-  draw();
-}
-
-function draw(time) {
-
-  if (!analyserContext) {
-    let canvas = document.getElementById("analyser");
-    canvasWidth = canvas.width;
-    canvasHeight = canvas.height;
-    analyserContext = canvas.getContext('2d');
-    gradient = analyserContext.createLinearGradient(0, 0, canvasWidth, 0);
-    gradient.addColorStop(0.15, '#ffff00'); // min level color
-    gradient.addColorStop(0.80, '#ff0000'); // max level color
-  }
-
-  // clear the background
-  analyserContext.clearRect(0, 0, canvasWidth, canvasHeight);
-
-  analyserContext.fillStyle = gradient;
-  // draw a bar based on the current volume
-  analyserContext.fillRect(0, 0, meter.volume * canvasWidth * 1.4, canvasHeight);
-
-  // set up the next visual callback
-  rafID = window.requestAnimationFrame(draw);
+  meter = new Meter();
+  meter.setup(audioContext, realAudioInput);
 }
 
 function cancelAnalyserUpdates() {
-  window.cancelAnimationFrame(rafID);
-  // clear the current state
-  if (analyserContext) {
-    analyserContext.clearRect(0, 0, canvasWidth, canvasHeight);
-  }
-  rafID = null;
+  window.cancelAnimationFrame(meter.rafID);
 }

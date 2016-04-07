@@ -1,10 +1,5 @@
 {% block stylesheets %}
-
-    {% stylesheets debug=false filter='lessphp, cssmin' output='vendor/innova/audio-recorder/css/innova-audio-recorder.min.css'
-        '@InnovaAudioRecorderBundle/Resources/public/less/app.less'
-    %}
-    <link href="{{ asset_url }}" rel="stylesheet" media="screen"/>
-    {% endstylesheets %}
+  <link href="{{asset('/bundles/innovaaudiorecorder/css/app.css')}}" rel="stylesheet" media="screen"/>
 {% endblock %}
 
 <!-- MODAL FORM -->
@@ -15,7 +10,6 @@
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                 <h4 class="modal-title">{{ 'innova_audio_recorder'|trans({}, 'resource') }}<span class="nb-try"></span><span class="timer"></span></h4>
-
             </div>
             <div class="modal-body">
                 <div class="row" id="form-error-msg-row" style="display: none;">
@@ -34,11 +28,19 @@
                     <div id="audioRecorderRow" class="row">
                         <div class="col-md-12 text-center">
                             <div class="btn-group">
-                                <button type="button" role="button" class="btn btn-danger fa fa-circle" id="audio-record-start" title="{{ 'start_recording'|trans({}, 'innova_audio_recorder') }}"></button>
+                                <button type="button" role="button" class="btn btn-default fa fa-circle" id="audio-record-start" title="{{ 'start_recording'|trans({}, 'innova_audio_recorder') }}"></button>
                                 <button type="button" role="button" class="btn btn-default fa fa-stop" id="audio-record-stop" title="{{ 'start_recording'|trans({}, 'innova_audio_recorder') }}" disabled="disabled"></button>
-
                             </div>
-                            <canvas class="pull-right" id="analyser" title="Mic level" width="34px" height="25px"></canvas>
+                            <div class="pull-right">
+                              <div class="row">
+                                <div class="col-md-6">
+                                  <div class="circle"></div>
+                                </div>
+                                <div class="col-md-6">
+                                  <canvas id="meter" width="10px" height="30px"></canvas>
+                                </div>
+                              </div>
+                            </div>
                         </div>
                     </div>
                     <hr/>
